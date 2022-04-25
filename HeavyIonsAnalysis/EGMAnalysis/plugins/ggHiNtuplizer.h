@@ -25,12 +25,14 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
 //#include "RecoEgamma/EgammaTools/interface/ConversionTools.h"
 #include "CommonTools/Egamma/interface/ConversionTools.h"
 #include "CommonTools/Egamma/interface/EffectiveAreas.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
-
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "HeavyIonsAnalysis/EGMAnalysis/interface/pfIsoCalculator.h"
 
 #include <TTree.h>
@@ -114,6 +116,9 @@ private:
   edm::EDGetTokenT<EcalRecHitCollection> recHitsEE_;
 
   edm::EDGetTokenT<std::vector<reco::SuperCluster>> scToken_;
+
+  edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> ttbESToken_;
+  edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometryToken_;
 
   const CaloGeometry* geo;
 

@@ -10,6 +10,7 @@
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Utilities/interface/ESGetToken.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -55,6 +56,7 @@ private:
 
   edm::EDGetTokenT<edm::TriggerResults> hltresultsToken_;
   edm::EDGetTokenT<GlobalAlgBlkBxCollection> l1resultsToken_;
+  edm::ESGetToken<L1TUtmTriggerMenu, L1TUtmTriggerMenuRcd> l1GtMenuToken_;
 
   std::unique_ptr<HLTPrescaleProvider> hltPrescaleProvider_;
 };
@@ -79,6 +81,7 @@ TriggerAnalyzer::TriggerAnalyzer(edm::ParameterSet const& conf)
       l1dummies(conf.getParameter<std::vector<std::string>>("l1dummybranches")),
       hltresultsToken_(consumes<edm::TriggerResults>(conf.getParameter<edm::InputTag>("hltresults"))),
       l1resultsToken_(consumes<GlobalAlgBlkBxCollection>(conf.getParameter<edm::InputTag>("l1results"))),
+      l1GtMenuToken_(esConsumes<L1TUtmTriggerMenu, L1TUtmTriggerMenuRcd>()),
       hltPrescaleProvider_(
           new HLTPrescaleProvider(conf.getParameter<edm::ParameterSet>("hltPSProvCfg"), consumesCollector(), *this)) {
   // open the tree file and initialize the tree
@@ -168,8 +171,10 @@ void TriggerAnalyzer::analyze(edm::Event const& iEvent, edm::EventSetup const& i
 
   l1GtUtils.retrieveL1(iEvent, iSetup);
 
-  edm::ESHandle<L1TUtmTriggerMenu> menu;
-  iSetup.get<L1TUtmTriggerMenuRcd>().get(menu);
+  //edm::ESHandle<L1TUtmTriggerMenu> menu;
+  //auto const& menu = iSetup.getData(l1GtMenuToken_);
+  auto const& menu = iSetup.getHandle(l1GtMenuToken_);
+  //iSetup.get<L1TUtmTriggerMenuRcd>().get(menu);
 
   if (l1results.isValid() && l1results->size() != 0) {
     /* reset accept status to -1 */

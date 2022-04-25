@@ -81,7 +81,6 @@ process.HiGenParticleAna.etaMax = cms.untracked.double(5.) # default is 2.5
 process.load('HeavyIonsAnalysis.EventAnalysis.hltanalysis_cfi')
 process.load('HeavyIonsAnalysis.EventAnalysis.particleFlowAnalyser_cfi')
 process.load('HeavyIonsAnalysis.EventAnalysis.hievtanalyzer_mc_cfi')
-#process.load('HeavyIonsAnalysis.EventAnalysis.hltanalysis_cfi')
 process.load('HeavyIonsAnalysis.EventAnalysis.skimanalysis_cfi')
 process.load('HeavyIonsAnalysis.EventAnalysis.hltobject_cfi')
 process.load('HeavyIonsAnalysis.EventAnalysis.l1object_cfi')
@@ -121,7 +120,7 @@ process.load("HeavyIonsAnalysis.TrackAnalysis.TrackAnalyzers_cff")
 process.forest = cms.Path(
     process.HiForestInfo +
     process.hltanalysis +
-    process.hltobject +
+    #process.hltobject +
     process.l1object +
     process.trackSequencePbPb +
     process.particleFlowAnalyser +

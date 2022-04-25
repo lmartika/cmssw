@@ -112,11 +112,13 @@ private:
   bool calZDCDigi_;
 
   edm::Service<TFileService> fs;
-  edm::ESHandle<CaloGeometry> geo;
+  //edm::ESHandle<CaloGeometry> geo;
+  const CaloGeometry* geo;
 
   //edm::EDGetTokenT<ZDCDigiCollection> zdcDigiSrc_;
   edm::InputTag zdcDigiSrc_;
   edm::EDGetTokenT<ZDCRecHitCollection> zdcRecHitSrc_;
+  edm::ESGetToken<CaloGeometry, CaloGeometryRecord> geometryToken_;
 
   bool doZDCRecHit_;
   bool doZDCDigi_;
@@ -149,6 +151,7 @@ ZDCTreeProducer::ZDCTreeProducer(const edm::ParameterSet& iConfig) {
 
   nZdcTs_ = iConfig.getParameter<int>("nZdcTs");
   calZDCDigi_ = iConfig.getParameter<bool>("calZDCDigi");
+  geometryToken_ = esConsumes();
 }
 
 ZDCTreeProducer::~ZDCTreeProducer() {
@@ -162,7 +165,8 @@ ZDCTreeProducer::~ZDCTreeProducer() {
 
 // ------------ method called to for each event  ------------
 void ZDCTreeProducer::analyze(const edm::Event& ev, const edm::EventSetup& iSetup) {
-  iSetup.get<CaloGeometryRecord>().get(geo);
+  //iSetup.get<CaloGeometryRecord>().get(geo);
+  geo = &iSetup.getData(geometryToken_);
   if (doZDCRecHit_) {
     edm::Handle<ZDCRecHitCollection> zdcrechits;
     ev.getByToken(zdcRecHitSrc_, zdcrechits);

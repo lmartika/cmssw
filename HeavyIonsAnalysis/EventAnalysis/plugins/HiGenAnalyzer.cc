@@ -117,8 +117,7 @@ private:
   edm::EDGetTokenT<std::vector<pat::PackedGenParticle>> genParticleSrc_;
   edm::EDGetTokenT<edm::View<pat::PackedGenParticle>> signalPackedGenParticleSrc_;
   edm::EDGetTokenT<edm::GenHIEvent> genHIsrc_;
-
-  edm::ESHandle<ParticleDataTable> pdt;
+  edm::ESGetToken<HepPDT::ParticleDataTable, PDTRecord> tok_pdt_;
   edm::Service<TFileService> f;
 };
 //
@@ -155,6 +154,7 @@ HiGenAnalyzer::HiGenAnalyzer(const edm::ParameterSet& iConfig) {
     genHIsrc_ =
         consumes<edm::GenHIEvent>(iConfig.getUntrackedParameter<edm::InputTag>("genHiSrc", edm::InputTag("heavyIon")));
   }
+  tok_pdt_ = esConsumes<HepPDT::ParticleDataTable, PDTRecord>();
   doParticles_ = iConfig.getUntrackedParameter<Bool_t>("doParticles", true);
   vector<int> defaultPDGs;
   motherDaughterPDGsToSave_ = iConfig.getUntrackedParameter<std::vector<int>>("motherDaughterPDGsToSave", defaultPDGs);
@@ -247,6 +247,8 @@ vector<int> HiGenAnalyzer::getDaughterIdx(edm::Handle<std::vector<pat::PackedGen
 void HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   using namespace edm;
   using namespace HepMC;
+
+  const HepPDT::ParticleDataTable* pdt = &iSetup.getData(tok_pdt_);
 
   hev_.pt.clear();
   hev_.eta.clear();
@@ -438,7 +440,7 @@ void HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 }
 
 // ------------ method called once each job just before starting event loop  ------------
-void HiGenAnalyzer::beginRun(const edm::Run&, const edm::EventSetup& iSetup) { iSetup.getData(pdt); }
+void HiGenAnalyzer::beginRun(const edm::Run&, const edm::EventSetup& iSetup) {}
 
 void HiGenAnalyzer::beginJob() {
   hydjetTree_ = f->make<TTree>("hi", "Tree of Hi gen Event");

@@ -12,10 +12,6 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "RecoEgamma/EgammaTools/interface/EcalClusterLocal.h"
 #include "TrackingTools/IPTools/interface/IPTools.h"
-#include "TrackingTools/Records/interface/TransientTrackRecord.h"
-#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
-#include "Geometry/Records/interface/CaloGeometryRecord.h"
-#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "CommonTools/Egamma/interface/ConversionTools.h"
 #include "CommonTools/Egamma/interface/EffectiveAreas.h"
 
@@ -95,6 +91,9 @@ ggHiNtuplizer::ggHiNtuplizer(const edm::ParameterSet& ps)
   if (doMuons_) {
     muonsToken_ = consumes<edm::View<pat::Muon>>(ps.getParameter<edm::InputTag>("muonSrc"));
   }
+
+  ttbESToken_ = esConsumes(edm::ESInputTag("", "TransientTrackBuilder"));
+  geometryToken_ = esConsumes();
 
   // initialize output TTree
   edm::Service<TFileService> fs;
@@ -989,15 +988,10 @@ void ggHiNtuplizer::analyze(const edm::Event& e, const edm::EventSetup& es) {
     }
   }
 
-  edm::ESHandle<TransientTrackBuilder> trackBuilder;
-  es.get<TransientTrackRecord>().get("TransientTrackBuilder", trackBuilder);
-  tb = trackBuilder.product();
+  tb = &es.getData(ttbESToken_);
 
-  if (doRecHitsEB_ || doRecHitsEE_) {
-    edm::ESHandle<CaloGeometry> pGeo;
-    es.get<CaloGeometryRecord>().get(pGeo);
-    geo = pGeo.product();
-  }
+  if (doRecHitsEB_ || doRecHitsEE_)
+    geo = &es.getData(geometryToken_);
 
   if (doSuperClusters_)
     fillSC(e);
@@ -1281,9 +1275,6 @@ void ggHiNtuplizer::fillElectrons(const edm::Event& e, const edm::EventSetup& es
   edm::Handle<edm::View<reco::GsfElectron>> gsfElectrons;
   e.getByToken(electronsToken_, gsfElectrons);
 
-  edm::ESHandle<CaloGeometry> caloGeometry;
-  es.get<CaloGeometryRecord>().get(caloGeometry);
-
   edm::Handle<reco::ConversionCollection> conversions;
   e.getByToken(conversionsToken_, conversions);
 
@@ -1433,10 +1424,10 @@ void ggHiNtuplizer::fillElectrons(const edm::Event& e, const edm::EventSetup& es
 
     if (subdetid == EcalBarrel) {
       //local.localCoordsEB(*theseed, es, eta, phi, ieta, iphi, thetatilt, phitilt);
-      egammaTools::localEcalClusterCoordsEB(*theseed, *caloGeometry, eta, phi, ieta, iphi, thetatilt, phitilt);
+      egammaTools::localEcalClusterCoordsEB(*theseed, *geo, eta, phi, ieta, iphi, thetatilt, phitilt);
     } else {
       //local.localCoordsEE(*theseed, es, eta, phi, ieta, iphi, thetatilt, phitilt);
-      egammaTools::localEcalClusterCoordsEE(*theseed, *caloGeometry, eta, phi, ieta, iphi, thetatilt, phitilt);
+      egammaTools::localEcalClusterCoordsEE(*theseed, *geo, eta, phi, ieta, iphi, thetatilt, phitilt);
     }
 
     eleSeedCryEta_.push_back(eta);
