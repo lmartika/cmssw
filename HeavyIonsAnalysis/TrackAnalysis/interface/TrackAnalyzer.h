@@ -7,7 +7,7 @@
 
 // CMSSW user include files
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -19,7 +19,7 @@
 // Root include files
 #include "TTree.h"
 
-class TrackAnalyzer : public edm::EDAnalyzer {
+class TrackAnalyzer : public edm::one::EDAnalyzer<> {
 public:
   explicit TrackAnalyzer(const edm::ParameterSet&);
   ~TrackAnalyzer() override;

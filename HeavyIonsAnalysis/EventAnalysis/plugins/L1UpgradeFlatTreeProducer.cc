@@ -14,7 +14,7 @@ This class writes information using standard data types which does not complicat
 
 // framework
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -38,7 +38,7 @@ This class writes information using standard data types which does not complicat
 // class declaration
 //
 
-class L1UpgradeFlatTreeProducer : public edm::EDAnalyzer {
+class L1UpgradeFlatTreeProducer : public edm::one::EDAnalyzer<> {
 public:
   explicit L1UpgradeFlatTreeProducer(const edm::ParameterSet&);
   ~L1UpgradeFlatTreeProducer() override;

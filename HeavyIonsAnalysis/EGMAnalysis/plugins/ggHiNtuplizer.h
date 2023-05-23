@@ -17,7 +17,7 @@
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -37,7 +37,7 @@
 
 #include <TTree.h>
 
-class ggHiNtuplizer : public edm::EDAnalyzer {
+class ggHiNtuplizer : public edm::one::EDAnalyzer<> {
 public:
   ggHiNtuplizer(const edm::ParameterSet&);
   ~ggHiNtuplizer() override;

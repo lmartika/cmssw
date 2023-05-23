@@ -326,8 +326,8 @@ void HLTMuTree::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //iEvent.getByLabel(tagRecoMu,muons2);
     iEvent.getByToken(tagRecoMu, muons2);
 
-    edm::ESHandle<TransientTrackBuilder> theTTBuilder;
-    iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", theTTBuilder);
+    const edm::ESGetToken<TransientTrackBuilder, TransientTrackRecord> transientTrackToken(esConsumes(edm::ESInputTag("", "TransientTrackBuilder")));
+    edm::ESHandle<TransientTrackBuilder> theTTBuilder = iSetup.getHandle(transientTrackToken);
     KalmanVertexFitter vtxFitter;
 
     int nDiMu = 0;

@@ -17,7 +17,7 @@
  */
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Run.h"
@@ -32,7 +32,7 @@
 
 #include <iostream>
 
-class QWZDC2018RecHit : public edm::EDProducer {
+class QWZDC2018RecHit : public edm::one::EDProducer<> {
 public:
   explicit QWZDC2018RecHit(const edm::ParameterSet&);
   ~QWZDC2018RecHit() override;

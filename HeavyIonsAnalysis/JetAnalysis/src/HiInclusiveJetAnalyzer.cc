@@ -111,6 +111,7 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
 HiInclusiveJetAnalyzer::~HiInclusiveJetAnalyzer() {}
 
 void HiInclusiveJetAnalyzer::beginRun(const edm::Run& run, const edm::EventSetup& es) {}
+void HiInclusiveJetAnalyzer::endRun(const edm::Run& run, const edm::EventSetup& es) {}
 
 void HiInclusiveJetAnalyzer::beginJob() {
   string jetTagTitle = jetTagLabel_.label() + " Jet Analysis Tree";

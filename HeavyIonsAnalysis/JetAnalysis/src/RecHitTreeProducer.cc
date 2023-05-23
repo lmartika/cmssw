@@ -23,7 +23,7 @@
 #include <vector>
 
 // user include files
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -130,7 +130,7 @@ struct MyBkg{
 // class declaration
 //
 
-class RecHitTreeProducer : public edm::EDAnalyzer {
+class RecHitTreeProducer : public edm::one::EDAnalyzer<> {
 public:
   explicit RecHitTreeProducer(const edm::ParameterSet&);
   ~RecHitTreeProducer();
@@ -689,8 +689,8 @@ RecHitTreeProducer::analyze(const edm::Event& ev, const edm::EventSetup& iSetup)
     edm::Handle<ZDCDigiCollection> zdcdigis;
     ev.getByToken(zdcDigiSrc_,zdcdigis);
 
-    edm::ESHandle<HcalDbService> conditions;
-    iSetup.get<HcalDbRecord>().get(conditions);
+    edm::ESGetToken<HcalDbService, HcalDbRecord> hcalDatabaseToken;
+    edm::ESHandle<HcalDbService> conditions = iSetup.getHandle(hcalDatabaseToken); 
 
     int nhits = 0;
     for (auto const& rh : *zdcdigis)  {

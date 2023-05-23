@@ -20,7 +20,7 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -82,13 +82,14 @@ struct HydjetEvent {
   Float_t vr;
 };
 
-class HiGenAnalyzer : public edm::EDAnalyzer {
+class HiGenAnalyzer : public edm::one::EDAnalyzer<edm::one::WatchRuns> {
 public:
   explicit HiGenAnalyzer(const edm::ParameterSet&);
   ~HiGenAnalyzer() override;
 
 private:
-  void beginRun(const edm::Run&, const edm::EventSetup&) override;
+  void beginRun(const edm::Run& run, const edm::EventSetup& iSetup) override;
+  void endRun(const edm::Run& run, const edm::EventSetup& iSetup) override;
   void beginJob() override;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void endJob() override;
@@ -440,7 +441,10 @@ void HiGenAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSe
 }
 
 // ------------ method called once each job just before starting event loop  ------------
-void HiGenAnalyzer::beginRun(const edm::Run&, const edm::EventSetup& iSetup) {}
+void HiGenAnalyzer::beginRun(const edm::Run& run, const edm::EventSetup& iSetup) {}
+
+// ------------ method called once each job just after finishing event loop  ------------
+void HiGenAnalyzer::endRun(const edm::Run& run, const edm::EventSetup& iSetup) {}
 
 void HiGenAnalyzer::beginJob() {
   hydjetTree_ = f->make<TTree>("hi", "Tree of Hi gen Event");

@@ -8,7 +8,7 @@
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -31,7 +31,7 @@
 // class declaration
 //
 
-class TriggerObjectAnalyzer : public edm::EDAnalyzer {
+class TriggerObjectAnalyzer : public edm::one::EDAnalyzer<edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
 public:
   explicit TriggerObjectAnalyzer(const edm::ParameterSet&);
   ~TriggerObjectAnalyzer() override;
@@ -180,7 +180,7 @@ void TriggerObjectAnalyzer::beginJob() {}
 // ------------ method called once each job just after ending the event loop  ------------
 void TriggerObjectAnalyzer::endJob() {}
 
-// ------------ method called when starting to processes a run  ------------
+// ------------ method called when starting to process a run  ------------
 void TriggerObjectAnalyzer::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup) {
   bool changed(true);
   if (hltConfig_.init(iRun, iSetup, processName_, changed)) {

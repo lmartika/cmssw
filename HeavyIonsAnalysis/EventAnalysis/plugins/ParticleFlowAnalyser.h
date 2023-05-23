@@ -1,7 +1,7 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
@@ -9,7 +9,7 @@
 
 #include "TTree.h"
 
-class ParticleFlowAnalyser : public edm::EDAnalyzer {
+class ParticleFlowAnalyser : public edm::one::EDAnalyzer<> {
 public:
   explicit ParticleFlowAnalyser(const edm::ParameterSet&);
   ~ParticleFlowAnalyser() override;

@@ -21,7 +21,7 @@
 #include <vector>
 
 // user include files
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -84,7 +84,7 @@ struct MyZDCDigi {
 // class declaration
 //
 
-class ZDCTreeProducer : public edm::EDAnalyzer {
+class ZDCTreeProducer : public edm::one::EDAnalyzer<> {
 public:
   explicit ZDCTreeProducer(const edm::ParameterSet&);
   ~ZDCTreeProducer() override;
@@ -208,8 +208,8 @@ void ZDCTreeProducer::analyze(const edm::Event& ev, const edm::EventSetup& iSetu
     edm::Handle<QIE10DigiCollection> zdcdigis;
     ev.getByLabel(zdcDigiSrc_, zdcdigis);
 
-    edm::ESHandle<HcalDbService> conditions;
-    iSetup.get<HcalDbRecord>().get(conditions);
+    edm::ESGetToken<HcalDbService, HcalDbRecord> hcalDatabaseToken;
+    edm::ESHandle<HcalDbService> conditions = iSetup.getHandle(hcalDatabaseToken);
 
     int nhits = 0;
     //    for (auto const& rh : *zdcdigis)  {

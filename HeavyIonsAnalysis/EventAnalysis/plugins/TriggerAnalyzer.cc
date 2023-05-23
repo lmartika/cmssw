@@ -8,7 +8,7 @@
 #include "DataFormats/L1TGlobal/interface/GlobalExtBlk.h"
 #include "FWCore/Common/interface/Provenance.h"
 #include "FWCore/Common/interface/TriggerNames.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/Utilities/interface/ESGetToken.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -22,14 +22,15 @@
 
 #include "TTree.h"
 
-class TriggerAnalyzer : public edm::EDAnalyzer {
+class TriggerAnalyzer : public edm::one::EDAnalyzer<edm::one::WatchRuns> {
 public:
   TriggerAnalyzer(edm::ParameterSet const& conf);
   ~TriggerAnalyzer() override;
 
-  void analyze(edm::Event const& e, edm::EventSetup const& iSetup) override;
+  void analyze(const edm::Event& e, const edm::EventSetup& iSetup) override;
   void endJob() override;
-  void beginRun(edm::Run const&, edm::EventSetup const&) override;
+  void beginRun(const edm::Run& run, const edm::EventSetup& es) override;
+  void endRun(const edm::Run& run, const edm::EventSetup& es) override;
 
 private:
   TTree* t_;
@@ -244,8 +245,8 @@ void TriggerAnalyzer::analyze(edm::Event const& iEvent, edm::EventSetup const& i
   t_->Fill();
 }
 
-// ------------ method called when starting to processes a run  ------------
-void TriggerAnalyzer::beginRun(edm::Run const& run, edm::EventSetup const& es) {
+// ------------ method called when starting to process a run  ------------
+void TriggerAnalyzer::beginRun(const edm::Run& run, const edm::EventSetup& es) {
   bool changed(true);
   if (hltPrescaleProvider_->init(run, es, processName_, changed)) {
     // if init returns TRUE, initialisation has succeeded!
@@ -259,6 +260,9 @@ void TriggerAnalyzer::beginRun(edm::Run const& run, edm::EventSetup const& es) {
     // In this case, all access methods will return empty values!
   }
 }
+
+// ------------ method called when processing run ends  ------------
+void TriggerAnalyzer::endRun(const edm::Run& run, const edm::EventSetup& es) {}
 
 void TriggerAnalyzer::endJob() {}
 

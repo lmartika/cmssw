@@ -7,7 +7,7 @@
 // user include files
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/one/EDFilter.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -18,7 +18,7 @@
 
 #include "DataFormats/HeavyIonEvent/interface/HFFilterInfo.h"  //this line is needed to access the HF Filters
 
-class HiHFFilter : public edm::EDFilter {
+class HiHFFilter : public edm::one::EDFilter<> {
 public:
   explicit HiHFFilter(const edm::ParameterSet&);
   ~HiHFFilter() override;

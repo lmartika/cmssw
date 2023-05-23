@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDFilter.h"
+#include "FWCore/Framework/interface/one/EDFilter.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -13,7 +13,7 @@
 
 #include <DataFormats/HeavyIonEvent/interface/ClusterCompatibility.h>
 
-class HIClusterCompatibilityFilter : public edm::EDFilter {
+class HIClusterCompatibilityFilter : public edm::one::EDFilter<> {
 public:
   explicit HIClusterCompatibilityFilter(const edm::ParameterSet&);
   ~HIClusterCompatibilityFilter() override;

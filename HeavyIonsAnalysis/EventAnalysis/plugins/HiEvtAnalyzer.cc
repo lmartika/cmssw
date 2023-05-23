@@ -5,7 +5,7 @@
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDAnalyzer.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
 
 #include "FWCore/Framework/interface/Event.h"
@@ -38,7 +38,7 @@
 // class declaration
 //
 
-class HiEvtAnalyzer : public edm::EDAnalyzer {
+class HiEvtAnalyzer : public edm::one::EDAnalyzer<> {
 public:
   explicit HiEvtAnalyzer(const edm::ParameterSet&);
   ~HiEvtAnalyzer() override;

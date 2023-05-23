@@ -1,5 +1,5 @@
 #include "FWCore/Framework/interface/Frameworkfwd.h"
-#include "FWCore/Framework/interface/EDProducer.h"
+#include "FWCore/Framework/interface/one/EDProducer.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/Run.h"
@@ -21,7 +21,7 @@
 #include "boost/bimap.hpp"
 
 using namespace std;
-class QWZDC2018Producer2 : public edm::EDProducer {
+class QWZDC2018Producer2 : public edm::one::EDProducer<edm::one::WatchRuns> {
 public:
   explicit QWZDC2018Producer2(const edm::ParameterSet&);
   ~QWZDC2018Producer2() override;
@@ -29,6 +29,7 @@ public:
 private:
   void produce(edm::Event&, const edm::EventSetup&) override;
   void beginRun(const edm::Run&, const edm::EventSetup&) override;
+  void endRun(const edm::Run&, const edm::EventSetup&) override;
   ///
 
   edm::InputTag Src_;
@@ -126,8 +127,10 @@ void QWZDC2018Producer2::produce(edm::Event& iEvent, const edm::EventSetup& iSet
   std::unique_ptr<std::vector<double>> pratio6o5(new std::vector<double>);
 
   ESHandle<HcalDbService> conditions;
-  if (!bHardCode_)
-    iSetup.get<HcalDbRecord>().get(conditions);
+  if (!bHardCode_){
+    edm::ESGetToken<HcalDbService, HcalDbRecord> hcalDatabaseToken;
+    conditions = iSetup.getHandle(hcalDatabaseToken);
+  }
 
   Handle<QIE10DigiCollection> digis;
   iEvent.getByLabel(Src_, digis);
@@ -235,5 +238,6 @@ void QWZDC2018Producer2::produce(edm::Event& iEvent, const edm::EventSetup& iSet
 }
 
 void QWZDC2018Producer2::beginRun(const edm::Run& r, const edm::EventSetup& iSetup) { return; }
+void QWZDC2018Producer2::endRun(const edm::Run& r, const edm::EventSetup& iSetup) { return; }
 
 DEFINE_FWK_MODULE(QWZDC2018Producer2);
