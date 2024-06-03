@@ -10,7 +10,7 @@ process = cms.Process('HiForest', Run3_pp_on_PbPb_2023)
 
 # HiForest info
 process.load("HeavyIonsAnalysis.EventAnalysis.HiForestInfo_cfi")
-process.HiForestInfo.info = cms.vstring("HiForest, miniAOD, 132X, mc")
+process.HiForestInfo.info = cms.vstring("HiForest, miniAOD, 140X, mc")
 
 ###############################################################################
 
@@ -38,7 +38,8 @@ process.load('FWCore.MessageService.MessageLogger_cfi')
 
 
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2023_realistic_hi', '')
+#process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2023_realistic_hi', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '132X_mcRun3_2023_realistic_HI_v10', '')
 process.HiForestInfo.GlobalTagLabel = process.GlobalTag.globaltag
 process.GlobalTag.snapshotTime = cms.string("9999-12-31 23:59:59.000")
 process.GlobalTag.toGet.extend([
@@ -48,6 +49,10 @@ process.GlobalTag.toGet.extend([
          )
 ])
 
+# Define centrality binning
+process.load("RecoHI.HiCentralityAlgos.CentralityBin_cfi")
+process.centralityBin.Centrality = cms.InputTag("hiCentrality")
+process.centralityBin.centralityVariable = cms.string("HFtowers")
 
 ###############################################################################
 
@@ -119,6 +124,7 @@ process.zdcanalyzer.verbose = False
 # main forest sequence
 process.forest = cms.Path(
     process.HiForestInfo +
+    process.centralityBin +
     process.hltanalysis +
 #    process.hltobject +
 #    process.l1object +

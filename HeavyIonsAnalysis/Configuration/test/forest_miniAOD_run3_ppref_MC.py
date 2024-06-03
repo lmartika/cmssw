@@ -13,7 +13,7 @@ process.options = cms.untracked.PSet()
 #####################################################################################
 
 process.load("HeavyIonsAnalysis.EventAnalysis.HiForestInfo_cfi")
-process.HiForestInfo.info = cms.vstring("HiForest, miniAOD, 125X, mc")
+process.HiForestInfo.info = cms.vstring("HiForest, miniAOD, 140X, mc")
 
 #####################################################################################
 # Input source
