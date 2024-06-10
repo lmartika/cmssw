@@ -22,6 +22,10 @@
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "fastjet/contrib/Njettiness.hh"
+
+#include "AnalysisDataFormats/TrackInfo/interface/TrackToGenParticleMap.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
+
 //
 
 /**\class HiInclusiveJetAnalyzer
@@ -79,6 +83,9 @@ private:
   edm::Handle<edm::ValueMap<float>> genSymVM_;
   edm::EDGetTokenT<edm::ValueMap<int>> tokenGenDroppedBranches_;
   edm::Handle<edm::ValueMap<int>> genDroppedBranchesVM_;
+
+  //Track-ptcl matching
+  edm::EDGetTokenT<reco::TrackToGenParticleMap> trackToGenParticleMapToken_;
 
   bool doMatch_;
   bool useVtx_;

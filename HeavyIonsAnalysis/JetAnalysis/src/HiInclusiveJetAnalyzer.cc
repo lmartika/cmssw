@@ -12,13 +12,19 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
+
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+
 #include "fastjet/contrib/Njettiness.hh"
 #include "fastjet/AreaDefinition.hh"
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/ClusterSequenceArea.hh"
 #include "fastjet/contrib/SoftDrop.hh"
+
+#include "AnalysisDataFormats/TrackInfo/interface/TrackToGenParticleMap.h"
+
 
 using namespace std;
 using namespace edm;
@@ -112,6 +118,14 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
     genPtMin_ = iConfig.getUntrackedParameter<double>("genPtMin", 10);
     doSubEvent_ = iConfig.getUntrackedParameter<bool>("doSubEvent", false);
   }
+
+
+  ///// This is for the track-gen-ptcl matching
+  if (isMC_) {
+    trackToGenParticleMapToken_ = consumes<reco::TrackToGenParticleMap>(iConfig.getUntrackedParameter<edm::InputTag>("trackToGenParticleMap", edm::InputTag("TrackToGenParticleMapProducer", "trackToGenParticleMap")));
+    }
+
+
 }
 
 HiInclusiveJetAnalyzer::~HiInclusiveJetAnalyzer() {}
@@ -460,9 +474,16 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 
   edm::Handle<edm::View<pat::PackedCandidate>> pfCandidates;
   iEvent.getByToken(pfCandidateLabel_, pfCandidates);
+
   if (isMC_) {
     edm::Handle<reco::GenParticleCollection> genparts;
     iEvent.getByToken(genParticleSrc_, genparts);
+
+    // Track-gen ptcl tagging
+    edm::Handle<reco::TrackToGenParticleMap> trackToGenParticleMap;
+    iEvent.getByToken(trackToGenParticleMapToken_, trackToGenParticleMap);
+
+    std::cout << trackToGenParticleMap->size() << std::endl;
   }
 
   // FILL JRA TREE
@@ -883,6 +904,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     }
     jets_.nref++;
   }
+
 
   if (isMC_) {
     if (useHepMC_) {

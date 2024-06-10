@@ -14,4 +14,7 @@
 <use name="RecoHI/HiJetAlgos"/>
 <use name="DataFormats/HeavyIonEvent"/>
 <use name="CondFormats/JetMETObjects"/>
+
+<use name="AnalysisDataFormats/TrackInfo"/>
+
 <flags EDM_PLUGIN="1"/>
