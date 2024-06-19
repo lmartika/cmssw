@@ -62,7 +62,7 @@ process.GlobalTag.toGet.extend([
 
 # root output
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("HiForestMiniAOD_AK2.root"))
+    fileName = cms.string("HiForestMiniAOD.root"))
 
 # # edm output for debugging purposes
 # process.output = cms.OutputModule(
@@ -148,7 +148,6 @@ process.forest = cms.Path(
 
 addR2Jets = True
 addR4Jets = False
-useECS = False
 addCandidateTagging = True
 
 
@@ -156,22 +155,15 @@ if addR2Jets or addR4Jets :
     process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
     process.load("RecoHI.HiJetAlgos.EventConstSub_cfi")
 
-    if useECS:
-        process.forest += process.extraECSJetsMC
-    else:
-        process.forest += process.extraJetsMC
-
     from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupHeavyIonJets
 
     if addR2Jets :
         process.jetsR2 = cms.Sequence()
-        setupHeavyIonJets('akCs2PF', process.jetsR2, process, isMC = 1, radius = 0.20, JECTag = 'AK3PF')
+        setupHeavyIonJets('akCs2PF', process.jetsR2, process, isMC = 1, radius = 0.20, JECTag = 'AK2PF')
         process.akCs2PFpatJetCorrFactors.levels = ['L2Relative', 'L3Absolute']
         process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAOD_cff")
         process.akCs2PFJetAnalyzer = process.akCs4PFJetAnalyzer.clone(jetTag = "akCs2PFpatJets", jetName = 'akCs2PF', genjetTag = "ak2GenJetsNoNu")      
         process.forest += process.jetsR2 * process.akCs2PFJetAnalyzer
-        if useECS: 
-            process.akCs3PFJets.src = 'EventConstSub'
 
     if addR4Jets :
         # Recluster using an alias "0" in order not to get mixed up with the default AK4 collections
@@ -182,13 +174,10 @@ if addR2Jets or addR4Jets :
         process.akCs4PFJetAnalyzer.jetTag = 'akCs0PFpatJets'
         process.akCs4PFJetAnalyzer.jetName = 'akCs0PF'
         process.forest += process.jetsR4 * process.akCs4PFJetAnalyzer
-        if useECS: 
-            process.akCs0PFJets.src = 'EventConstSub'
-
 
 # To apply PNET we have to remove the JEC first.  We could have just done this before the JEC is applied, but I copied this from the pp workflow
 # Maybe something to clean up for the future
-# Also note that it's only setup for R=0.4 for the moment. -> own edit to R=.2
+# Also note that it's only setup for R=0.4 for the moment. -> own edit to AK2
 
 
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
@@ -198,7 +187,7 @@ if addCandidateTagging:
     updateJetCollection(
         process,
         jetSource = cms.InputTag('slimmedJets'),
-        jetCorrections = ('AK2PF', cms.vstring(['L1FastJet', 'L2Relative', 'L3Absolute']), 'None'),
+        jetCorrections = ('AK2PF', cms.vstring(['L2Relative', 'L3Absolute']), 'None'),
         btagDiscriminators = ['pfCombinedSecondaryVertexV2BJetTags', 'pfDeepCSVDiscriminatorsJetTags:BvsAll', 'pfDeepCSVDiscriminatorsJetTags:CvsB', 'pfDeepCSVDiscriminatorsJetTags:CvsL'], ## to add discriminators,
         btagPrefix = 'TEST',
     )
@@ -242,7 +231,7 @@ if addCandidateTagging:
     process.akCs2PFJetAnalyzer.jetTag = "updatedCorrectedPatJets"
     process.akCs2PFJetAnalyzer.doCandidateBtagging = True
 
-## Gen jets for track-ptcl tagging
+## Track-Gen-matches, try to use AK2
 
 process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
 process.genJetSequence += process.mergedGenParticles
@@ -255,16 +244,14 @@ process.genJetSequence += process.HFdecayProductTagger
 
 taggedGenParticlesName_ = "HFdecayProductTagger"
 ## Produces a std::vector<pat::PackedGenParticle> named HFdecayProductTagger
-process.akCs4PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
+process.akCs2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
 
-#process.updatedPatJets.jetSource = 'akCs2PFpatJets'
 process.load("RecoHI.HiJetAlgos.TrackToGenParticleMapProducer_cfi")
 
-# Should not be corrected jets but this is for testing -> does not work, figure out correct order for doing things
-process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedPatJets")
+process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedCorrectedPatJets")  
 process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
 process.genJetSequence += process.TrackToGenParticleMapProducer
-## Creates the genConstitToGenParticleMap and trackToGenParticleMap
+
     
 #########################
 # Event Selection -> add the needed filters here
