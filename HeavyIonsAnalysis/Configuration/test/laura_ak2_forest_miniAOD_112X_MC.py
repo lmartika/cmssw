@@ -154,6 +154,7 @@ addCandidateTagging = True
 if addR2Jets or addR4Jets :
     process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
     process.load("RecoHI.HiJetAlgos.EventConstSub_cfi")
+    process.forest += process.extraJetsMC
 
     from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupHeavyIonJets
 
@@ -181,6 +182,10 @@ if addR2Jets or addR4Jets :
 
 
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
+
+ipTagInfoLabel_ = "pfImpactParameter"
+svTagInfoLabel_ = "pfInclusiveSecondaryVertexFinder"
+
 if addCandidateTagging:
     process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAOD_cff")
 
@@ -202,9 +207,22 @@ if addCandidateTagging:
     process.redoPatJetCorrFactors = process.akCs2PFpatJetCorrFactors.clone(
         src = cms.InputTag("updatedPatJets"),
     )
+
+#SV needed for aggregation
+    process.load("RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi")
+    process.pfImpactParameterTagInfos.candidates  = "packedPFCandidates"
+    process.pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVertices"
+    process.pfImpactParameterTagInfos.jets = "updatedPatJets"
+
+    process.load("RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi")
+    process.pfInclusiveSecondaryVertexFinderTagInfos.extSVCollection = "slimmedSecondaryVertices"
+
     process.updatedCorrectedPatJets = process.updatedPatJets.clone(
         jetSource = "updatedPatJets",
         jetCorrFactorsSource = cms.VInputTag(cms.InputTag("redoPatJetCorrFactors")),
+        tagInfoSources = cms.VInputTag(
+            cms.InputTag(ipTagInfoLabel_ + "TagInfos"),
+            cms.InputTag(svTagInfoLabel_ + "TagInfos")),
         discriminatorSources = cms.VInputTag(
             cms.InputTag('pfParticleNetAK4JetTags:probb'),
             cms.InputTag('pfParticleNetAK4JetTags:probbb'),
@@ -220,10 +238,13 @@ if addCandidateTagging:
             cms.InputTag('pfParticleNetAK4DiscriminatorsJetTags:CvsB'),
         )
     )
-    
+    process.updatedCorrectedPatJets.addTagInfos = True
+
     process.forest.insert(-1,
                           process.undoPatJetCorrFactors*
                           process.updatedPatJets*
+                          process.pfImpactParameterTagInfos *
+                          process.pfInclusiveSecondaryVertexFinderTagInfos *
                           process.candidateBtagging*
                           process.redoPatJetCorrFactors*
                           process.updatedCorrectedPatJets
@@ -231,7 +252,13 @@ if addCandidateTagging:
     process.akCs2PFJetAnalyzer.jetTag = "updatedCorrectedPatJets"
     process.akCs2PFJetAnalyzer.doCandidateBtagging = True
 
+
 ## Track-Gen-matches, try to use AK2
+process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
+process.akCs2PFJetAnalyzer.ipTagInfoLabel = cms.untracked.string(ipTagInfoLabel_)
+
+process.akCs2PFJetAnalyzer.doSvtx = cms.untracked.bool(True)
+process.akCs2PFJetAnalyzer.svTagInfoLabel = cms.untracked.string(svTagInfoLabel_)
 
 process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
 process.genJetSequence += process.mergedGenParticles
@@ -250,7 +277,8 @@ process.load("RecoHI.HiJetAlgos.TrackToGenParticleMapProducer_cfi")
 
 process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedCorrectedPatJets")  
 process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
-process.genJetSequence += process.TrackToGenParticleMapProducer
+####process.genJetSequence += process.TrackToGenParticleMapProducer
+process.forest.insert(-1,process.TrackToGenParticleMapProducer)
 
     
 #########################

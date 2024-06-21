@@ -97,7 +97,7 @@ TrackToGenParticleMapProducer::TrackToGenParticleMapProducer(const edm::Paramete
 
 // ------------ method called to produce the data  ------------
 void TrackToGenParticleMapProducer::produce(edm::StreamID, edm::Event &evt, const edm::EventSetup &setup) const {
-//   std::cout << "In TrackToGenParticleMapProducer produce" << std::endl;
+  //std::cout << "In TrackToGenParticleMapProducer produce" << std::endl;
 
   edm::Handle<std::vector<JetType>> inputJets;
   evt.getByToken(inputJetsToken_, inputJets);
@@ -110,9 +110,8 @@ void TrackToGenParticleMapProducer::produce(edm::StreamID, edm::Event &evt, cons
   std::unique_ptr<MapType> trackToGenParticleMap = std::make_unique<MapType>();
   std::unique_ptr<MapType> genConstitToGenParticleMap = std::make_unique<MapType>();
 
-  
   for (const JetType jet : *inputJets) {
-    // std::cout << "New jet" << std::endl;
+    //std::cout << "New jet" << std::endl;
 
     // Go over the charged jet constituents (aka tracks)
     for (const TrackTypePtr constitPtr : jet.getJetConstituents()) {
@@ -138,14 +137,17 @@ void TrackToGenParticleMapProducer::produce(edm::StreamID, edm::Event &evt, cons
     } // end gen jet constituents loop
 
     // [TEST]: Go over the SV tracks 
+    
     std::string svTagInfoLabel_ = "pfInclusiveSecondaryVertexFinder";
     const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
+  
     int nsv = svTagInfo->nVertices();
+    // std::cout << "got vertices" << std::endl;
     for (int isv = 0; isv < nsv; isv++) {
       const std::vector<reco::CandidatePtr> svTracks = svTagInfo->vertexTracks(isv);
       for (auto svTrkPtr : svTracks) {
         if (svTrkPtr->charge() == 0) continue;
-
+	std::cout << "In SV tracks" << std::endl;
         // Look if the particle is already in the map
         if (trackToGenParticleMap->find(svTrkPtr) != trackToGenParticleMap->end()) {
           continue;
@@ -162,7 +164,7 @@ void TrackToGenParticleMapProducer::produce(edm::StreamID, edm::Event &evt, cons
   evt.put(std::move(genConstitToGenParticleMap), "genConstitToGenParticleMap");
 }
 
-TrackToGenParticleMapProducer::GenTypePtr 
+  TrackToGenParticleMapProducer::GenTypePtr 
   TrackToGenParticleMapProducer::findMatch(TrackTypePtr cand, 
                                            edm::Handle<std::vector<GenType>> genParticles) const {
   double minDR2 = std::numeric_limits<double>::max();

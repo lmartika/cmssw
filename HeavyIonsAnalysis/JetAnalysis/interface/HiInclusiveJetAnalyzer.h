@@ -114,6 +114,13 @@ private:
   bool doJetConstituents_;
   bool doGenSubJets_;
 
+  /*   bool doTracks_;
+       double trkPtCut_; */
+  std::string ipTagInfoLabel_;
+  //  bool doSvtx_;
+  std::string svTagInfoLabel_;
+  // bool doJetTrueFlavour_;
+
   TTree* t;
   edm::Service<TFileService> fs1;
 

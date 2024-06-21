@@ -121,9 +121,10 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
 
 
   ///// This is for the track-gen-ptcl matching
+  ipTagInfoLabel_ = iConfig.getUntrackedParameter<std::string>("ipTagInfoLabel");
   if (isMC_) {
     trackToGenParticleMapToken_ = consumes<reco::TrackToGenParticleMap>(iConfig.getUntrackedParameter<edm::InputTag>("trackToGenParticleMap", edm::InputTag("TrackToGenParticleMapProducer", "trackToGenParticleMap")));
-    }
+  }
 
 
 }
@@ -435,14 +436,14 @@ void HiInclusiveJetAnalyzer::beginJob() {
   }
   if (doCandidateBtagging_) {
     memset(jets_.discr_pnetBvsAll, 0, MAXJETS * sizeof(float));
-    memset(jets_.discr_pnetProbB, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbBB, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbC, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbCC, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbG, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbUDS, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbPU, 0, MAXJETS * sizeof(float));    
-    memset(jets_.discr_pnetProbUNDEF, 0, MAXJETS * sizeof(float));    
+    memset(jets_.discr_pnetProbB, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbBB, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbC, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbCC, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbG, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbUDS, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbPU, 0, MAXJETS * sizeof(float));
+    memset(jets_.discr_pnetProbUNDEF, 0, MAXJETS * sizeof(float));
     memset(jets_.discr_pfJP, 0, MAXJETS * sizeof(float));
   }
 }
@@ -475,15 +476,15 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   edm::Handle<edm::View<pat::PackedCandidate>> pfCandidates;
   iEvent.getByToken(pfCandidateLabel_, pfCandidates);
 
+  edm::Handle<reco::TrackToGenParticleMap> trackToGenParticleMap;
   if (isMC_) {
     edm::Handle<reco::GenParticleCollection> genparts;
     iEvent.getByToken(genParticleSrc_, genparts);
 
     // Track-gen ptcl tagging
-    edm::Handle<reco::TrackToGenParticleMap> trackToGenParticleMap;
     iEvent.getByToken(trackToGenParticleMapToken_, trackToGenParticleMap);
 
-    std::cout << trackToGenParticleMap->size() << std::endl;
+    std::cout << "Map size: " << trackToGenParticleMap->size() << std::endl;
   }
 
   // FILL JRA TREE
