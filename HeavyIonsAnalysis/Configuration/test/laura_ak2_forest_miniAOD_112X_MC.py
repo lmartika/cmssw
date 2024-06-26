@@ -33,7 +33,8 @@ process.source = cms.Source("PoolSource",
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+     input = cms.untracked.int32(10)
+#    input = cms.untracked.int32(2000)
     )
 
 ###############################################################################
@@ -138,10 +139,7 @@ process.forest = cms.Path(
     process.hiEvtAnalyzer +
     process.HiGenParticleAna + 
     process.genJetSequence
-#    process.unpackedMuons +
-#    process.correctedElectrons +
 #    process.ggHiNtuplizer +
-#    process.muonAnalyzer
     )
 
 #customisation
@@ -236,9 +234,13 @@ if addCandidateTagging:
             cms.InputTag('pfParticleNetAK4DiscriminatorsJetTags:CvsL'),
             cms.InputTag('pfParticleNetAK4DiscriminatorsJetTags:QvsG'),
             cms.InputTag('pfParticleNetAK4DiscriminatorsJetTags:CvsB'),
-        )
+       )
     )
     process.updatedCorrectedPatJets.addTagInfos = True
+#    process.updatedCorrectedPatJets.tagInfoSources = cms.VInputTag(
+#        cms.InputTag(ipTagInfoLabel_ + "TagInfos"),
+#        cms.InputTag(svTagInfoLabel_ + "TagInfos"),
+#    )
 
     process.forest.insert(-1,
                           process.undoPatJetCorrFactors*
@@ -273,11 +275,22 @@ taggedGenParticlesName_ = "HFdecayProductTagger"
 ## Produces a std::vector<pat::PackedGenParticle> named HFdecayProductTagger
 process.akCs2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
 
+process.bDecayAna = process.HiGenParticleAna.clone(
+    genParticleSrc = cms.InputTag(taggedGenParticlesName_),
+    useRefVector = cms.untracked.bool(False),
+    partonMEOnly = cms.untracked.bool(False),
+    chargedOnly = True, 
+    doHI = False,
+    etaMax = cms.untracked.double(10),
+    ptMin = cms.untracked.double(0),
+    stableOnly = False
+)
+process.genJetSequence += process.bDecayAna
+
 process.load("RecoHI.HiJetAlgos.TrackToGenParticleMapProducer_cfi")
 
 process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedCorrectedPatJets")  
 process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
-####process.genJetSequence += process.TrackToGenParticleMapProducer
 process.forest.insert(-1,process.TrackToGenParticleMapProducer)
 
     
