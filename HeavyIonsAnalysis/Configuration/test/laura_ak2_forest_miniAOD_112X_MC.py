@@ -150,7 +150,7 @@ addR4Jets = False
 addCandidateTagging = True
 
 doTracks = False
-doSvtx = False
+doSvtx = True
 doGenAnalysis = False
 
 if addR2Jets or addR4Jets :

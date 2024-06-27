@@ -555,7 +555,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   jets_.nvtx = primaryVertices->size();
   //  std::cout << "PV:" <<  primaryVertices->size() << std::endl;
   //  std::cout << "PV:" <<  primaryVertices->at(0).position() << std::endl;
-  
+
   //  std::cout << "Number of tracks: " << jets_.ntrk << std::endl; 
   if (doTracks_) jets_.ntrk = 0;
   if (doSvtx_) {
@@ -604,6 +604,11 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   for (unsigned int j = 0; j < jets->size(); ++j) {
     const pat::Jet& jet = (*jets)[j];
 
+    // DEBUG SVTX:
+    const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
+    int nsv = svTagInfo->nVertices();
+    std::cout << jet.hasTagInfo(svTagInfoLabel_.c_str()) << " " << nsv << std::endl;
+    
     auto pt = useRawPt_ ? jet.correctedJet("Uncorrected").pt() : jet.pt();
     if (pt < jetPtMin_)
       continue;
