@@ -146,8 +146,12 @@ process.forest = cms.Path(
 
 addR2Jets = True
 addR4Jets = False
+
 addCandidateTagging = True
 
+doTracks = False
+doSvtx = False
+doGenAnalysis = False
 
 if addR2Jets or addR4Jets :
     process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
@@ -164,6 +168,7 @@ if addR2Jets or addR4Jets :
         process.akCs2PFJetAnalyzer = process.akCs4PFJetAnalyzer.clone(jetTag = "akCs2PFpatJets", jetName = 'akCs2PF', genjetTag = "ak2GenJetsNoNu")      
         process.forest += process.jetsR2 * process.akCs2PFJetAnalyzer
 
+        
     if addR4Jets :
         # Recluster using an alias "0" in order not to get mixed up with the default AK4 collections
         process.jetsR4 = cms.Sequence()
@@ -210,6 +215,7 @@ if addCandidateTagging:
     process.load("RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi")
     process.pfImpactParameterTagInfos.candidates  = "packedPFCandidates"
     process.pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVertices"
+#    process.pfImpactParameterTagInfos.primaryVertex = "hiSelectedVertex"
     process.pfImpactParameterTagInfos.jets = "updatedPatJets"
 
     process.load("RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi")
@@ -237,6 +243,7 @@ if addCandidateTagging:
        )
     )
     process.updatedCorrectedPatJets.addTagInfos = True
+
 #    process.updatedCorrectedPatJets.tagInfoSources = cms.VInputTag(
 #        cms.InputTag(ipTagInfoLabel_ + "TagInfos"),
 #        cms.InputTag(svTagInfoLabel_ + "TagInfos"),
@@ -254,44 +261,46 @@ if addCandidateTagging:
     process.akCs2PFJetAnalyzer.jetTag = "updatedCorrectedPatJets"
     process.akCs2PFJetAnalyzer.doCandidateBtagging = True
 
+if doTracks:
+    process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
+    process.akCs2PFJetAnalyzer.ipTagInfoLabel = cms.untracked.string(ipTagInfoLabel_)
+if doSvtx:
+    process.akCs2PFJetAnalyzer.doSvtx = cms.untracked.bool(True)
+    process.akCs2PFJetAnalyzer.svTagInfoLabel = cms.untracked.string(svTagInfoLabel_)
 
-## Track-Gen-matches, try to use AK2
-process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
-process.akCs2PFJetAnalyzer.ipTagInfoLabel = cms.untracked.string(ipTagInfoLabel_)
 
-process.akCs2PFJetAnalyzer.doSvtx = cms.untracked.bool(True)
-process.akCs2PFJetAnalyzer.svTagInfoLabel = cms.untracked.string(svTagInfoLabel_)
+if doGenAnalysis:
+## Track-Gen-matches, try to use AK2    
+    process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
+    process.genJetSequence += process.mergedGenParticles
+    ## Produces a reco::GenParticleCollection named mergedGenParticles
 
-process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
-process.genJetSequence += process.mergedGenParticles
-## Produces a reco::GenParticleCollection named mergedGenParticles
+    process.load("RecoHI.HiJetAlgos.HFdecayProductTagger_cfi")
+    process.HFdecayProductTagger.genParticles = cms.InputTag("mergedGenParticles")
+    process.HFdecayProductTagger.tagBorC = cms.bool(True) # tag B
+    process.genJetSequence += process.HFdecayProductTagger
 
-process.load("RecoHI.HiJetAlgos.HFdecayProductTagger_cfi")
-process.HFdecayProductTagger.genParticles = cms.InputTag("mergedGenParticles")
-process.HFdecayProductTagger.tagBorC = cms.bool(True) # tag B
-process.genJetSequence += process.HFdecayProductTagger
+    taggedGenParticlesName_ = "HFdecayProductTagger"
+    ## Produces a std::vector<pat::PackedGenParticle> named HFdecayProductTagger
+    process.akCs2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
 
-taggedGenParticlesName_ = "HFdecayProductTagger"
-## Produces a std::vector<pat::PackedGenParticle> named HFdecayProductTagger
-process.akCs2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
+    process.bDecayAna = process.HiGenParticleAna.clone(
+        genParticleSrc = cms.InputTag(taggedGenParticlesName_),
+        useRefVector = cms.untracked.bool(False),
+        partonMEOnly = cms.untracked.bool(False),
+        chargedOnly = True, 
+        doHI = False,
+        etaMax = cms.untracked.double(10),
+        ptMin = cms.untracked.double(0),
+        stableOnly = False
+    )
+    process.genJetSequence += process.bDecayAna
 
-process.bDecayAna = process.HiGenParticleAna.clone(
-    genParticleSrc = cms.InputTag(taggedGenParticlesName_),
-    useRefVector = cms.untracked.bool(False),
-    partonMEOnly = cms.untracked.bool(False),
-    chargedOnly = True, 
-    doHI = False,
-    etaMax = cms.untracked.double(10),
-    ptMin = cms.untracked.double(0),
-    stableOnly = False
-)
-process.genJetSequence += process.bDecayAna
+    process.load("RecoHI.HiJetAlgos.TrackToGenParticleMapProducer_cfi")
 
-process.load("RecoHI.HiJetAlgos.TrackToGenParticleMapProducer_cfi")
-
-process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedCorrectedPatJets")  
-process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
-process.forest.insert(-1,process.TrackToGenParticleMapProducer)
+    process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedCorrectedPatJets")  
+    process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
+    process.forest.insert(-1,process.TrackToGenParticleMapProducer)
 
     
 #########################

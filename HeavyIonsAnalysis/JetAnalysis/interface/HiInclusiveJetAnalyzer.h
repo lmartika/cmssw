@@ -87,6 +87,9 @@ private:
   //Track-ptcl matching
   edm::EDGetTokenT<reco::TrackToGenParticleMap> trackToGenParticleMapToken_;
 
+  edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVerticesToken_;
+  edm::Handle<std::vector<reco::Vertex>> primaryVertices;
+
   bool doMatch_;
   bool useVtx_;
   bool useRawPt_;
@@ -114,10 +117,10 @@ private:
   bool doJetConstituents_;
   bool doGenSubJets_;
 
-  /*   bool doTracks_;
-       double trkPtCut_; */
+  bool doTracks_;
+  double trkPtCut_;
   std::string ipTagInfoLabel_;
-  //  bool doSvtx_;
+  bool doSvtx_;
   std::string svTagInfoLabel_;
   // bool doJetTrueFlavour_;
 
@@ -144,13 +147,15 @@ private:
   std::string pfJPJetTags_;
 
   static const int MAXJETS = 1000;
-  static const int MAXTRACKS = 5000;
+  static const int MAXTRACKS = 50000;
+  static const int MAXSVTX = 100;
 
   struct JRA {
     int nref=0;
     int run=0;
     int evt=0;
     int lumi=0;
+    int nvtx=0;
 
     float rawpt[MAXJETS]={0};
     float jtpt[MAXJETS]={0};
@@ -167,6 +172,16 @@ private:
     float jtpu[MAXJETS]={0};
     float jtm[MAXJETS]={0};
     float jtarea[MAXJETS]={0};
+
+    float jtmB[MAXJETS]={0};
+    float jtBpt[MAXJETS]={0};
+    float jtBntracks[MAXJETS]={0};
+    float jtptCh[MAXJETS]={0};
+    float refmB[MAXJETS]={0};
+    float refBpt[MAXJETS]={0};
+    float refBntracks[MAXJETS]={0};
+    float refptCh[MAXJETS]={0};
+    int refNtrk[MAXJETS]={0};
 
     float jtPfCHF[MAXJETS]={0};
     float jtPfNHF[MAXJETS]={0};
@@ -307,7 +322,10 @@ private:
     float pdiscr_csvV1[MAXJETS]={0};
     float pdiscr_csvV2[MAXJETS]={0};
 
-    int nsvtx[MAXJETS]={0};
+    int nsvtx=0;
+    int jtNsvtx[MAXJETS]={0};
+    int svtxJetId[MAXSVTX]={0};
+    int svtxNtrk[MAXSVTX]={0};
     int svtxntrk[MAXJETS]={0};
     float svtxdl[MAXJETS]={0};
     float svtxdls[MAXJETS]={0};
@@ -322,6 +340,14 @@ private:
     int svtxTrkNetCharge[MAXJETS]={0};
     int svtxNtrkInCone[MAXJETS]={0};
 
+    int ntrkInSvtxNotInJet=0; 
+    int trkInSvtxNotInJetSvId[MAXTRACKS]={0};
+    int trkInSvtxNotInJetOtherJetId[MAXTRACKS]={0};
+    int trkInSvtxNotInJetMatchSta[MAXTRACKS]={0};
+    float trkInSvtxNotInJetPt[MAXTRACKS]={0};
+    float trkInSvtxNotInJetEta[MAXTRACKS]={0};
+    float trkInSvtxNotInJetPhi[MAXTRACKS]={0};
+
     float trackPtRel[MAXTRACKS]={0};
     float trackPtRatio[MAXTRACKS]={0};
     float trackPPar[MAXTRACKS]={0};
@@ -335,6 +361,25 @@ private:
     float mudr[MAXJETS]={0};
     float muptrel[MAXJETS]={0};
     int muchg[MAXJETS]={0};
+
+    int ntrk=0;
+    int jtNtrk[MAXJETS]={0};
+    int trkJetId[MAXTRACKS]={0};
+    int trkSvtxId[MAXTRACKS]={0};
+    float trkPt[MAXTRACKS]={0};
+    float trkEta[MAXTRACKS]={0};
+    float trkPhi[MAXTRACKS]={0};
+    float trkIp3d[MAXTRACKS]={0};
+    float trkIp3dSig[MAXTRACKS]={0};
+    float trkIp2d[MAXTRACKS]={0};
+    float trkIp2dSig[MAXTRACKS]={0};
+    float trkDistToAxis[MAXTRACKS]={0};
+    float trkDistToAxisSig[MAXTRACKS]={0};
+    float trkIpProb3d[MAXTRACKS]={0};
+    float trkIpProb2d[MAXTRACKS]={0};
+    float trkDz[MAXTRACKS]={0};
+    int trkPdgId[MAXTRACKS]={0};
+    int trkMatchSta[MAXTRACKS]={0};
 
     float refpt[MAXJETS]={0};
     float refeta[MAXJETS]={0};

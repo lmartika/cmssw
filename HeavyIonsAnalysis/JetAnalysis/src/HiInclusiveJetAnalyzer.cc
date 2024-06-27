@@ -120,13 +120,23 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
   }
 
 
-  ///// This is for the track-gen-ptcl matching
-  ipTagInfoLabel_ = iConfig.getUntrackedParameter<std::string>("ipTagInfoLabel");
-  if (isMC_) {
-    trackToGenParticleMapToken_ = consumes<reco::TrackToGenParticleMap>(iConfig.getUntrackedParameter<edm::InputTag>("trackToGenParticleMap", edm::InputTag("TrackToGenParticleMapProducer", "trackToGenParticleMap")));
+  ///// This is for obtaining inputs for aggregation - clean and put things behind flags
+
+  doSvtx_ = iConfig.getUntrackedParameter<bool>("doSvtx",false);
+  if (doSvtx_) {
+    svTagInfoLabel_ = iConfig.getUntrackedParameter<std::string>("svTagInfoLabel");
   }
 
+  doTracks_ = iConfig.getUntrackedParameter<bool>("doTracks", false);
 
+  if (doTracks_) {
+    trkPtCut_ = iConfig.getUntrackedParameter<double>("trkPtCut", 1.);
+    ipTagInfoLabel_ = iConfig.getUntrackedParameter<std::string>("ipTagInfoLabel");
+    if (isMC_) {
+      trackToGenParticleMapToken_ = consumes<reco::TrackToGenParticleMap>(iConfig.getUntrackedParameter<edm::InputTag>("trackToGenParticleMap", edm::InputTag("TrackToGenParticleMapProducer", "trackToGenParticleMap")));
+    }
+  }
+  primaryVerticesToken_ = consumes<std::vector<reco::Vertex>>(iConfig.getUntrackedParameter<edm::InputTag>("primaryVertices", edm::InputTag("offlineSlimmedPrimaryVertices")));
 }
 
 HiInclusiveJetAnalyzer::~HiInclusiveJetAnalyzer() {}
@@ -422,6 +432,57 @@ void HiInclusiveJetAnalyzer::beginJob() {
     }
   }
 
+  if (doTracks_) {
+    t->Branch("jtNtrk", jets_.jtNtrk, "jtNtrk[nref]/I");
+    t->Branch("ntrk", &jets_.ntrk, "ntrk/I");
+    t->Branch("trkJetId", jets_.trkJetId, "trkJetId[ntrk]/I");
+    t->Branch("trkSvtxId", jets_.trkSvtxId, "trkSvtxId[ntrk]/I");
+    t->Branch("trkPt", jets_.trkPt, "trkPt[ntrk]/F");
+    t->Branch("trkEta", jets_.trkEta, "trkEta[ntrk]/F");
+    t->Branch("trkPhi", jets_.trkPhi, "trkPhi[ntrk]/F");
+    t->Branch("trkIp3d", jets_.trkIp3d, "trkIp3d[ntrk]/F");
+    t->Branch("trkIp3dSig", jets_.trkIp3dSig, "trkIp3dSig[ntrk]/F");
+    t->Branch("trkIp2d", jets_.trkIp2d, "trkIp2d[ntrk]/F");
+    t->Branch("trkIp2dSig", jets_.trkIp2dSig, "trkIp2dSig[ntrk]/F");
+    t->Branch("trkDistToAxisSig", jets_.trkDistToAxisSig, "trkDistToAxisSig[ntrk]/F");
+    t->Branch("trkDistToAxis", jets_.trkDistToAxis, "trkDistToAxis[ntrk]/F");
+    t->Branch("trkIpProb3d", jets_.trkIpProb3d, "trkIpProb3d[ntrk]/F");
+    t->Branch("trkIpProb2d", jets_.trkIpProb2d, "trkIpProb2d[ntrk]/F");
+    t->Branch("trkDz", jets_.trkDz, "trkDz[ntrk]/F");
+    t->Branch("trkPdgId", jets_.trkPdgId, "trkPdgId[ntrk]/I");
+    t->Branch("trkMatchSta", jets_.trkMatchSta, "trkMatchSta[ntrk]/I");
+
+    t->Branch("jtptCh", jets_.jtptCh, "jtptCh[nref]/F");
+    if (isMC_) {
+      t->Branch("refptCh", jets_.refptCh, "refptCh[nref]/F");
+      t->Branch("refNtrk", jets_.refNtrk, "refNtrk[nref]/I");
+    }
+  }
+
+  if (doSvtx_) {
+    t->Branch("jtNsvtx", jets_.jtNsvtx, "jtNsvtx[nref]/I");
+    t->Branch("nsvtx", &jets_.nsvtx, "nsvtx/I");
+    t->Branch("svtxJetId", jets_.svtxJetId, "svtxJetId[nsvtx]/I");
+    t->Branch("svtxNtrk", jets_.svtxNtrk, "svtxNtrk[nsvtx]/I");
+    t->Branch("svtxdl", jets_.svtxdl, "svtxdl[nsvtx]/F");
+    t->Branch("svtxdls", jets_.svtxdls, "svtxdls[nsvtx]/F");
+    t->Branch("svtxdl2d", jets_.svtxdl2d, "svtxdl2d[nsvtx]/F");
+    t->Branch("svtxdls2d", jets_.svtxdls2d, "svtxdls2d[nsvtx]/F");
+    t->Branch("svtxm", jets_.svtxm, "svtxm[nsvtx]/F");
+    t->Branch("svtxmcorr", jets_.svtxmcorr, "svtxmcorr[nsvtx]/F");
+    t->Branch("svtxpt", jets_.svtxpt, "svtxpt[nsvtx]/F");
+    t->Branch("svtxnormchi2", jets_.svtxnormchi2, "svtxnormchi2[nsvtx]/F");
+    
+    /*    t->Branch("ntrkInSvtxNotInJet", &jets_.ntrkInSvtxNotInJet, "ntrkInSvtxNotInJet/I");
+    t->Branch("trkInSvtxNotInJetSvId", jets_.trkInSvtxNotInJetSvId, "trkInSvtxNotInJetSvId[ntrkInSvtxNotInJet]/I");
+    t->Branch("trkInSvtxNotInJetOtherJetId", jets_.trkInSvtxNotInJetOtherJetId, "trkInSvtxNotInJetOtherJetId[ntrkInSvtxNotInJet]/I");
+    t->Branch("trkInSvtxNotInJetMatchSta", jets_.trkInSvtxNotInJetMatchSta, "trkInSvtxNotInJetMatchSta[ntrkInSvtxNotInJet]/I");
+    t->Branch("trkInSvtxNotInJetPt", jets_.trkInSvtxNotInJetPt, "trkInSvtxNotInJetPt[ntrkInSvtxNotInJet]/F");
+    t->Branch("trkInSvtxNotInJetEta", jets_.trkInSvtxNotInJetEta, "trkInSvtxNotInJetEta[ntrkInSvtxNotInJet]/F");
+    t->Branch("trkInSvtxNotInJetPhi", jets_.trkInSvtxNotInJetPhi, "trkInSvtxNotInJetPhi[ntrkInSvtxNotInJet]/F"); */
+  }
+
+
   if (doLegacyBtagging_) {
     /* clear arrays */
     memset(jets_.discr_csvV2, 0, MAXJETS * sizeof(float));
@@ -476,19 +537,31 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   edm::Handle<edm::View<pat::PackedCandidate>> pfCandidates;
   iEvent.getByToken(pfCandidateLabel_, pfCandidates);
 
+  
   edm::Handle<reco::TrackToGenParticleMap> trackToGenParticleMap;
-  if (isMC_) {
+  if (isMC_ and doTracks_) {
     edm::Handle<reco::GenParticleCollection> genparts;
     iEvent.getByToken(genParticleSrc_, genparts);
 
     // Track-gen ptcl tagging
     iEvent.getByToken(trackToGenParticleMapToken_, trackToGenParticleMap);
-
-    std::cout << "Map size: " << trackToGenParticleMap->size() << std::endl;
+    //    std::cout << "Map size: " << trackToGenParticleMap->size() << std::endl;
   }
+
+  iEvent.getByToken(primaryVerticesToken_, primaryVertices);
 
   // FILL JRA TREE
   jets_.nref = 0;
+  jets_.nvtx = primaryVertices->size();
+  //  std::cout << "PV:" <<  primaryVertices->size() << std::endl;
+  //  std::cout << "PV:" <<  primaryVertices->at(0).position() << std::endl;
+  
+  //  std::cout << "Number of tracks: " << jets_.ntrk << std::endl; 
+  if (doTracks_) jets_.ntrk = 0;
+  if (doSvtx_) {
+    jets_.nsvtx = 0;
+    //jets_.ntrkInSvtxNotInJet = 0;
+  }
 
   if (doJetConstituents_) {
     jets_.jtConstituentsId.clear();
