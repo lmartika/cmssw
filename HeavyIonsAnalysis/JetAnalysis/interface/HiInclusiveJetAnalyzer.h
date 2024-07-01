@@ -76,9 +76,6 @@ private:
   std::string jetName_;  //used as prefix for jet structures
   edm::EDGetTokenT<edm::View<reco::Jet>> subjetGenTag_;
   edm::Handle<reco::JetView> gensubjets_;
-  edm::EDGetTokenT<edm::ValueMap<float>> tokenGenTau1_;
-  edm::EDGetTokenT<edm::ValueMap<float>> tokenGenTau2_;
-  edm::EDGetTokenT<edm::ValueMap<float>> tokenGenTau3_;
   edm::EDGetTokenT<edm::ValueMap<float>> tokenGenSym_;
   edm::Handle<edm::ValueMap<float>> genSymVM_;
   edm::EDGetTokenT<edm::ValueMap<int>> tokenGenDroppedBranches_;
@@ -194,10 +191,6 @@ private:
     int jtPfCEM[MAXJETS]={0};
     int jtPfNEM[MAXJETS]={0};
     int jtPfMUM[MAXJETS]={0};
-
-    float jttau1[MAXJETS]={0};
-    float jttau2[MAXJETS]={0};
-    float jttau3[MAXJETS]={0};
 
     float jtsym[MAXJETS]={0};
     int jtdroppedBranches[MAXJETS]={0};
@@ -387,9 +380,6 @@ private:
     float refm[MAXJETS]={0};
     float refarea[MAXJETS]={0};
     float refy[MAXJETS]={0};
-    float reftau1[MAXJETS]={0};
-    float reftau2[MAXJETS]={0};
-    float reftau3[MAXJETS]={0};
     float refsym[MAXJETS]={0};
     int refdroppedBranches[MAXJETS]={0};
     float refdphijt[MAXJETS]={0};
@@ -430,9 +420,7 @@ private:
     float genphi[MAXJETS] = {0};
     float genm[MAXJETS] = {0};
     float geny[MAXJETS] = {0};
-    float gentau1[MAXJETS] = {0};
-    float gentau2[MAXJETS] = {0};
-    float gentau3[MAXJETS] = {0};
+
     float gendphijt[MAXJETS] = {0};
     float gendrjt[MAXJETS] = {0};
     int gensubid[MAXJETS] = {0};
