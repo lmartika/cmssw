@@ -154,6 +154,15 @@ void HiInclusiveJetAnalyzer::beginJob() {
   t->Branch("jtm", jets_.jtm, "jtm[nref]/F");
   t->Branch("jtarea", jets_.jtarea, "jtarea[nref]/F");
 
+  t->Branch("jtdyn_split",jets_.jtdyn_split,"jtdyn_split[nref]/I");
+  // t->Branch("jtdyn_theta",jets_.jtdyn_theta,"jtdyn_theta[nref]/F");
+  t->Branch("jtdyn_deltaR",jets_.jtdyn_deltaR,"jtdyn_deltaR[nref]/F");
+  t->Branch("jtdyn_kt",jets_.jtdyn_kt,"jtdyn_kt[nref]/F");
+  t->Branch("jtdyn_z",jets_.jtdyn_z,"jtdyn_z[nref]/F");
+  t->Branch("jt_intjet_multi", jets_.jt_intjet_multi,"jt_intjet_multi[nref]/I");
+  t->Branch("jt_girth", jets_.jt_girth, "jt_girth[nref]/F");
+  
+  
   t->Branch("jtPfCHF", jets_.jtPfCHF, "jtPfCHF[nref]/F");
   t->Branch("jtPfNHF", jets_.jtPfNHF, "jtPfNHF[nref]/F");
   t->Branch("jtPfCEF", jets_.jtPfCEF, "jtPfCEF[nref]/F");
@@ -310,6 +319,21 @@ void HiInclusiveJetAnalyzer::beginJob() {
     t->Branch("refm", jets_.refm, "refm[nref]/F");
     t->Branch("refarea", jets_.refarea, "refarea[nref]/F");
 
+    // Simple subjet stuff
+    t->Branch("refdyn_split",jets_.refdyn_split,"refdyn_split[nref]/I");
+    // t->Branch("refdyn_theta",jets_.refdyn_theta,"refdyn_theta[nref]/F");
+    t->Branch("refdyn_deltaR",jets_.refdyn_deltaR,"refdyn_deltaR[nref]/F");
+
+    t->Branch("refdyn_kt",jets_.refdyn_kt,"refdyn_kt[nref]/F");
+    t->Branch("refdyn_z",jets_.refdyn_z,"refdyn_z[nref]/F");
+    t->Branch("ref_intjet_multi", jets_.ref_intjet_multi,"ref_intjet_multi[nref]/I");
+    t->Branch("ref_girth", jets_.ref_girth, "ref_girth[nref]/F");
+    t->Branch("jtdyn_isClosestToTruth", jets_.jtdyn_isClosestToTruth,"jtdyn_isClosestToTruth[nref]/O");
+    t->Branch("refdyn_isClosestToReco", jets_.refdyn_isClosestToReco,"refdyn_isClosestToReco[nref]/O");
+    t->Branch("jtdyn_refdyn_dR", jets_.jtdyn_refdyn_dR,"jtdyn_refdyn_dR[nref]/F");
+    /////////////////
+
+    
     t->Branch("refdphijt", jets_.refdphijt, "refdphijt[nref]/F");
     t->Branch("refdrjt", jets_.refdrjt, "refdrjt[nref]/F");
     // matched parton
@@ -575,8 +599,12 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     ///////////////
     // DEBUG SVTX:
     //    const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
-    const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex();
-    int nsv = svTagInfo->nVertices();
+    if (doSvtx_) {
+      const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex();
+      int nsv = svTagInfo->nVertices();
+      jets_.nsvtx += nsv;
+      jets_.jtNsvtx[jets_.nref] = nsv;
+    }
     // std::cout << jet.hasTagInfo(svTagInfoLabel_.c_str()) << " " << nsv << std::endl;
     ////////////////
     
@@ -794,6 +822,69 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     jets_.jtsym[jets_.nref] = -999.;
     jets_.jtdroppedBranches[jets_.nref] = -999;
 
+
+    ///// substructure stuff
+    jets_.jtdyn_split[jets_.nref] = 0;
+    // jets_.jtdyn_theta[jets_.nref] = 0;
+    jets_.jtdyn_kt[jets_.nref] = 0;
+    jets_.jtdyn_z[jets_.nref] = 0;
+    fastjet::PseudoJet *sub1Gen = new fastjet::PseudoJet();
+    fastjet::PseudoJet *sub2Gen = new fastjet::PseudoJet();
+    fastjet::PseudoJet *sub1Hyb = new fastjet::PseudoJet();
+    fastjet::PseudoJet *sub2Hyb = new fastjet::PseudoJet();
+    //    IterativeDeclusteringRec(groom_type, groom_combine, jet, sub1Hyb, sub2Hyb);
+    IterativeDeclusteringRec(0.0, 0.0, jet, sub1Hyb, sub2Hyb);
+    jets_.refpt[jets_.nref] = 0;
+    jets_.refeta[jets_.nref] = 0;
+    jets_.refphi[jets_.nref] = 0;
+    jets_.refsym[jets_.nref] = 0.;
+        // jets_.refrg[jets_.nref] = 0;
+        // jets_.refdynkt[jets_.nref] = 0;
+    // jets_.refangu[jets_.nref] = 0; 
+        // jets_.refdyn_pt1[jets_.nref] = 0;
+    // jets_.refdyn_var[jets_.nref] = 0;
+    jets_.refdyn_split[jets_.nref] = 0;
+    // jets_.refdyn_theta[jets_.nref] = 0;
+    jets_.refdyn_kt[jets_.nref] = 0;
+    jets_.refdyn_z[jets_.nref] = 0;
+    jets_.jtdyn_isClosestToTruth[jets_.nref] = 0;
+    jets_.refdyn_isClosestToReco[jets_.nref] = 0;
+    jets_.jtdyn_refdyn_dR[jets_.nref] = 0;
+    jets_.refsub11[jets_.nref] = 0;
+    jets_.refsub12[jets_.nref] = 0;
+    jets_.refsub21[jets_.nref] = 0;
+    jets_.refsub22[jets_.nref] = 0;
+    // std::cout << jets_.jtJetConstituent.size() << " " << jets_.refJetConstituent.size() << " sizes of consts" << std::endl;
+
+    if (isMC_){
+      const reco::GenJet * genjet = jet.genJet();
+      if(!genjet) continue;
+
+      if(jet.genParton()){
+        const reco::GenParticle & parton = *jet.genParton();
+        jets_.refparton_pt[jets_.nref] = parton.pt();
+        jets_.refparton_flavor[jets_.nref] = parton.pdgId();
+      }
+      else {
+        jets_.refparton_pt[jets_.nref] = -999;
+        jets_.refparton_flavor[jets_.nref] = -999;
+      }
+      jets_.refpt[jets_.nref] = genjet->pt();
+      jets_.refeta[jets_.nref] = genjet->eta();
+      jets_.refphi[jets_.nref] = genjet->phi();
+            //cout<<"jet daughters gen"<<genjet->numberOfDaughters()<<endl;
+      //      if(dopthatcut) if(pthat<0.35*genjet->pt()) continue;
+
+      //      IterativeDeclusteringGen(groom_type, groom_combine, *genjet, sub1Gen, sub2Gen);
+      IterativeDeclusteringGen(0.0, 0.0, *genjet, sub1Gen, sub2Gen);
+      
+    }
+    delete sub1Gen;
+    delete sub2Gen;
+    delete sub1Hyb;
+    delete sub2Hyb;
+    /////////////////////
+    
     if (doSubJets_)
       analyzeSubjets(jet);
 
@@ -802,7 +893,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     if (jet.hasUserInt(jetName_ + "Jets:droppedBranches"))
       jets_.jtdroppedBranches[jets_.nref] = jet.userInt(jetName_ + "Jets:droppedBranches");
 
-    if (jet.isPFJet()) {
+    /*    if (jet.isPFJet()) {
       jets_.jtPfCHF[jets_.nref] = jet.chargedHadronEnergyFraction();
       jets_.jtPfNHF[jets_.nref] = jet.neutralHadronEnergyFraction();
       jets_.jtPfCEF[jets_.nref] = jet.chargedEmEnergyFraction();
@@ -826,7 +917,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       jets_.jtPfCEM[jets_.nref] = 0;
       jets_.jtPfNEM[jets_.nref] = 0;
       jets_.jtPfMUM[jets_.nref] = 0;
-    }
+      } */
 
     //    if(isMC_){
 
@@ -1007,6 +1098,371 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 
   //memset(&jets_,0,sizeof jets_);
   jets_ = {0};
+}
+
+void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double groom_combine, const reco::Jet& jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2)
+{
+  //  TRandom *r1 = new TRandom3(0);
+  int intjet_multi = 0;
+  float jet_girth = 0;
+  Int_t nsplit = 0;
+  double dyn_kt = std::numeric_limits<double>::min();
+  int dyn_split = 0;
+  double z = 0;
+  double dyn_deltaR = 0;
+  // double dyn_var = std::numeric_limits<double>::min();
+  double dyn_z = 0;
+  double jet_radius_ca = 1.0;
+  fastjet::JetDefinition jet_def(fastjet::genkt_algorithm,jet_radius_ca,0,static_cast<fastjet::RecombinationScheme>(0), fastjet::Best);
+
+  fastjet::PseudoJet myjet;
+  fastjet::PseudoJet mypart;
+  myjet.reset(jet.p4().px(),jet.p4().py(),jet.p4().pz(),jet.p4().e());
+  // Reclustering jet constituents with new algorithm
+  try{
+    std::vector<fastjet::PseudoJet> particles = {};                         
+    auto daughters = jet.getJetConstituents();
+        // std::cout << "Number of pfCand " << pfCandidates.size() << std::endl;
+        // Geometrical PF Candidate x Jet Constituent Matching - Added by Bharadwaj - Apr 2023
+        // poor man's matching, someone fix please
+    // std::vector<int> vec_jet_consituent_charge;
+    for(auto it = daughters.begin(); it!=daughters.end(); ++it){
+      //if we want only charged constituents and the daughter charge is 0, skip it
+      if(doChargedConstOnly_ && (**it).charge()==0) continue;
+      double PFE_scale = 1.;
+      //if it is MC, rescale the 4-momentum of the charged particles (we accept only them above) by pfCCES(+-1%)
+      //      if(isMC_) PFE_scale = pfChargedCandidateEnergyScale_;
+      //vary tracking efficiency - drop ~4% of particles within the jet
+      //      if(isMC_ && doTrackVariation_){
+      //  // std::cout << "doing the track variation" << std::endl;
+      //  if(r1->Uniform(0,1)<0.05) continue;
+      //  }
+      // std::cout << "Rescaling charged pfCand energy by " << PFE_scale << std::endl;
+      particles.push_back(fastjet::PseudoJet((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale));
+      mypart.reset((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale);
+      intjet_multi++;
+      jet_girth += mypart.perp()*mypart.delta_R(myjet)/myjet.perp();
+    }
+    // std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
+    if(particles.empty()){
+      // jets_.jtdyn_var[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_kt[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_z[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jt_intjet_multi[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jt_girth[jets_.nref] = - std::numeric_limits<double>::max();
+      throw(123);
+    }
+    // std::cout << "Clustering " << particles.size() << " number of reco particles" << std::endl;
+    fastjet::ClusterSequence csiter(particles, jet_def);
+    std::vector<fastjet::PseudoJet> output_jets = csiter.inclusive_jets(0);
+    output_jets = sorted_by_pt(output_jets);
+    fastjet::PseudoJet jj = output_jets[0];
+    fastjet::PseudoJet j1;
+    fastjet::PseudoJet j2;
+    fastjet::PseudoJet highest_splitting;
+    if(!jj.has_parents(j1,j2)){
+      jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_kt[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_z[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jt_intjet_multi[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jt_girth[jets_.nref] = - std::numeric_limits<double>::max();
+      throw(124);
+    }
+    while(jj.has_parents(j1,j2)){
+      /*if(j1.perp() < j2.perp()) std::swap(j1,j2);
+      double delta_R = j1.delta_R(j2);
+      if(doHardestSplitMatching_ && isMC_) jets_.jtJetConstituent.push_back(j2);
+      double k_t = j2.perp()*delta_R;
+      z = j2.perp()/(j1.perp()+j2.perp());
+      // double dyn = z*(1-z)*j2.perp()*pow(delta_R/rParam,mydynktcut);
+      // double dyn = 1./output_jets[0].perp()*z*(1-z)*jj.perp()*pow(delta_R/rParam,mydynktcut);
+      // std::cout << "Reco split " << nsplit << " with k_T=" << k_t << " z=" << z << " eta " << j2.eta() << " phi " << j2.phi() <<  std::endl;
+      if(k_t > dyn_kt){
+        // dyn_var = dyn;
+        highest_splitting = j2;
+
+        dyn_kt = k_t;
+        dyn_split = nsplit;
+        dyn_deltaR = delta_R;
+        dyn_z = z;
+      }*/
+      if (j1.perp() < j2.perp()) std::swap(j1,j2); // j1 is the harder subjet
+      z = j2.perp()/(j1.perp()+j2.perp());
+      if (z > 0.1) { // TODO: do not hard code these things..
+	double delta_R = j1.delta_R(j2);	
+	double k_t = j2.perp()*delta_R;
+	//	highest_splitting = j2; // is this needed?
+        dyn_kt = k_t;
+        dyn_split = nsplit;
+        dyn_deltaR = delta_R;
+        dyn_z = z;
+	break;
+      }
+      jj = j1;
+      nsplit = nsplit+1;
+    }
+    // std::cout << highest_splitting.eta() << " " << highest_splitting.phi() << " highest reco splitting eta phi at " << dyn_split << std::endl;
+    // jets_.jtdyn_var[jets_.nref] = dyn_var;
+    jets_.jtdyn_split[jets_.nref] = dyn_split;
+    jets_.jtdyn_deltaR[jets_.nref] = dyn_deltaR;
+    jets_.jtdyn_kt[jets_.nref] = dyn_kt;
+    jets_.jtdyn_z[jets_.nref] = dyn_z;
+    jets_.jt_intjet_multi[jets_.nref] = intjet_multi;
+    jets_.jt_girth[jets_.nref] = jet_girth;
+  } 
+  catch (fastjet::Error const&) { /*return -1;*/ }
+  catch (Int_t MyNum){
+    if(MyNum == 123)
+      std::cout << "Whoops, seems the number of charged jet constituents is 0! Setting all reco jet split variables to numeric min." << std::endl;
+    if(MyNum == 124)
+      std::cout << "Jet does not have any parents, out of the loop!" << std::endl;
+      }
+}
+void HiInclusiveJetAnalyzer::IterativeDeclusteringGen(double groom_type, double groom_combine,const reco::GenJet& jet,fastjet::PseudoJet *sub1,fastjet::PseudoJet *sub2)
+{
+  int intjet_multi = 0;
+  float jet_girth = 0;
+  double nsplit = 0;
+  // double dyn_theta = 0;
+  double dyn_kt = std::numeric_limits<double>::min();
+  int dyn_split = 0;
+  double dyn_deltaR = 0;
+  double z = 0;
+  double dyn_z = 0;
+  double jet_radius_ca = 1.0;
+  fastjet::JetDefinition jet_def(fastjet::genkt_algorithm,jet_radius_ca,0,static_cast<fastjet::RecombinationScheme>(0), fastjet::Best);
+  fastjet::PseudoJet myjet;
+  fastjet::PseudoJet mypart;
+  myjet.reset(jet.p4().px(),jet.p4().py(),jet.p4().pz(),jet.p4().e());  
+    // Reclustering jet constituents with new algorithm
+  try{
+    std::vector<fastjet::PseudoJet> particles = {};                         
+    auto daughters = jet.getJetConstituents();
+    for(auto it = daughters.begin(); it!=daughters.end(); ++it){
+      //if we want only charged constituents and the daughter charge is 0, skip it
+      if(doChargedConstOnly_ && (**it).charge()==0) continue;
+      particles.push_back(fastjet::PseudoJet((**it).px(), (**it).py(), (**it).pz(), (**it).energy()));
+      mypart.reset((**it).px(), (**it).py(), (**it).pz(), (**it).energy());
+      intjet_multi++;
+      jet_girth += mypart.perp()*mypart.delta_R(myjet)/myjet.perp();
+    }
+
+    // std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
+    if(particles.empty()){
+      // jets_.jtdyn_var[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.refdyn_split[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.refdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.refdyn_kt[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.refdyn_z[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.ref_intjet_multi[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.ref_girth[jets_.nref] = - std::numeric_limits<double>::max();
+      throw(123);
+    }
+    // std::cout << "Clustering " << particles.size() << " number of truth particles" << std::endl;
+    fastjet::ClusterSequence csiter(particles, jet_def);
+    std::vector<fastjet::PseudoJet> output_jets = csiter.inclusive_jets(0);
+    output_jets = sorted_by_pt(output_jets);
+    fastjet::PseudoJet jj = output_jets[0];
+    fastjet::PseudoJet j1;
+    fastjet::PseudoJet j2;
+    fastjet::PseudoJet highest_splitting;
+    if(!jj.has_parents(j1,j2)){
+      jets_.refdyn_split[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.refdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.refdyn_kt[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.refdyn_z[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.ref_intjet_multi[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.ref_girth[jets_.nref] = - std::numeric_limits<double>::max();
+      throw(124);
+    }
+    // Edit this to SD -> 
+    while(jj.has_parents(j1,j2)){
+      if(j1.perp() < j2.perp()) std::swap(j1,j2); // j1 is the harder subjet
+      z = j2.perp()/(j1.perp()+j2.perp());
+      if (z > 0.1) {
+	double delta_R = j1.delta_R(j2);	
+	double k_t = j2.perp()*delta_R;
+	//	highest_splitting = j2; // is this needed?
+        dyn_kt = k_t;
+        dyn_split = nsplit;
+        dyn_deltaR = delta_R;
+        dyn_z = z;
+	break;
+      }
+     
+      //if(doHardestSplitMatching_ && isMC_) jets_.refJetConstituent.push_back(j2); // is this needed?
+      //       // std::cout << "Truth split " << nsplit << " with k_T=" << k_t << " z=" << z <<  " eta " << j2.eta() << " phi " << j2.phi() <<  std::endl;
+      
+      jj = j1; // We follow the hard prong if SD condition not satisfied
+      nsplit = nsplit+1;
+    }
+    // std::cout << highest_splitting.eta() << " " << highest_splitting.phi() << " highest truth splitting eta phi at " << dyn_split << std::endl;
+    jets_.refdyn_split[jets_.nref] = dyn_split;
+    jets_.refdyn_deltaR[jets_.nref] = dyn_deltaR;
+    jets_.refdyn_kt[jets_.nref] = dyn_kt;
+    jets_.refdyn_z[jets_.nref] = dyn_z;
+    jets_.ref_intjet_multi[jets_.nref] = intjet_multi;
+    jets_.ref_girth[jets_.nref] = jet_girth;
+  } 
+  catch (fastjet::Error const&) { /*return -1;*/ }
+  catch (Int_t MyNum){
+    if(MyNum == 123)
+           std::cout << "Whoops, seems the number of charged jet constituents is 0! Setting all gen jet split variables to numeric min." << std::endl;
+    if(MyNum == 124)
+            std::cout << "Jet does not have any parents, out of the loop!" << std::endl;
+      } 
+}
+
+template <typename T>
+void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double groom_combine, const T &jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2)
+{
+  //  TRandom *r1 = new TRandom3(0);
+  int intjet_multi = 0;
+  float jet_girth = 0;
+	Int_t nsplit = 0;
+  double dyn_kt = std::numeric_limits<double>::min();
+  int dyn_split = 0;
+  double z = 0;
+  double dyn_deltaR = 0;
+  // double dyn_var = std::numeric_limits<double>::min();
+  double dyn_z = 0;
+  double jet_radius_ca = 1.0;
+  fastjet::JetDefinition jet_def(fastjet::genkt_algorithm,jet_radius_ca,0,static_cast<fastjet::RecombinationScheme>(0), fastjet::Best);
+  fastjet::PseudoJet myjet;
+  fastjet::PseudoJet mypart;
+  myjet.reset(jet.p4().px(),jet.p4().py(),jet.p4().pz(),jet.p4().e());
+  // Reclustering jet constituents with new algorithm
+  try{
+    std::vector<fastjet::PseudoJet> particles = {};                         // Different thing to be done with GEN jets
+    auto daughters = jet.getJetConstituents();
+        // std::cout << "Number of pfCand " << pfCandidates.size() << std::endl;
+        // Geometrical PF Candidate x Jet Constituent Matching - Added by Bharadwaj - Apr 2023
+        // poor man's matching, someone fix please
+    // std::vector<int> vec_jet_consituent_charge;
+    for(auto it = daughters.begin(); it!=daughters.end(); ++it){  // Should this in general be skipped for genjets (right now configured PFEscale = 1)? -> could add isgenjet boolean?
+      //if we want only charged constituents and the daughter charge is 0, skip it
+      if(doChargedConstOnly_ && (**it).charge()==0) continue;
+      double PFE_scale = 1.;
+      //if it is MC, rescale the 4-momentum of the charged particles (we accept only them above) by pfCCES(+-1%)
+      //      if(isMC_) PFE_scale = pfChargedCandidateEnergyScale_;
+      //vary tracking efficiency - drop ~4% of particles within the jet
+      //  if(isMC_ && doTrackVariation_){ 
+      //  // std::cout << "doing the track variation" << std::endl;
+      //  if(r1->Uniform(0,1)<0.05) continue;
+      // }
+      // std::cout << "Rescaling charged pfCand energy by " << PFE_scale << std::endl;
+      particles.push_back(fastjet::PseudoJet((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale));
+      mypart.reset((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale);
+      intjet_multi++;
+      jet_girth += mypart.perp()*mypart.delta_R(myjet)/myjet.perp();
+    }
+    // std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
+    if(particles.empty()){
+      // jets_.jtdyn_var[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_kt[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_z[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jt_intjet_multi[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jt_girth[jets_.nref] = - std::numeric_limits<double>::max();
+      throw(123);
+    }
+    // std::cout << "Clustering " << particles.size() << " number of reco particles" << std::endl;
+    fastjet::ClusterSequence csiter(particles, jet_def);
+    std::vector<fastjet::PseudoJet> output_jets = csiter.inclusive_jets(0);
+    output_jets = sorted_by_pt(output_jets);
+    fastjet::PseudoJet jj = output_jets[0];
+    fastjet::PseudoJet j1;
+    fastjet::PseudoJet j2;
+    fastjet::PseudoJet highest_splitting;
+    if(!jj.has_parents(j1,j2)){
+      jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_kt[jets_.nref] = - std::numeric_limits<double>::max();
+      jets_.jtdyn_z[jets_.nref] = - std::numeric_limits<double>::max();
+
+      jets_.jt_intjet_multi[jets_.nref] = std::numeric_limits<int>::min();
+      jets_.jt_girth[jets_.nref] = - std::numeric_limits<double>::max();
+      throw(124);
+    }
+    while(jj.has_parents(j1,j2)){
+      if (j1.perp() < j2.perp()) std::swap(j1,j2); // j1 is the harder subjet
+      z = j2.perp()/(j1.perp()+j2.perp());
+      if (z > 0.1) { // TODO: do not hard code these things..
+	double delta_R = j1.delta_R(j2);	
+	double k_t = j2.perp()*delta_R;
+	//	highest_splitting = j2; // is this needed?
+        dyn_kt = k_t;
+        dyn_split = nsplit;
+        dyn_deltaR = delta_R;
+        dyn_z = z;
+	break;
+      }
+      jj = j1; // Follow the hard prong if SD not satisfied
+      nsplit = nsplit+1;
+    }
+    // std::cout << highest_splitting.eta() << " " << highest_splitting.phi() << " highest reco splitting eta phi at " << dyn_split << std::endl;
+    // jets_.jtdyn_var[jets_.nref] = dyn_var;
+    jets_.jtdyn_split[jets_.nref] = dyn_split;
+    jets_.jtdyn_deltaR[jets_.nref] = dyn_deltaR;
+    jets_.jtdyn_kt[jets_.nref] = dyn_kt;
+    jets_.jtdyn_z[jets_.nref] = dyn_z;
+    jets_.jt_intjet_multi[jets_.nref] = intjet_multi;
+    jets_.jt_girth[jets_.nref] = jet_girth;
+  } 
+  catch (fastjet::Error) { /*return -1;*/ }
+  catch (Int_t MyNum){
+    if(MyNum == 123)
+         std::cout << "Whoops, seems the number of charged jet constituents is 0! Setting all reco jet split variables to numeric min." << std::endl;
+    if(MyNum == 124)
+         std::cout << "Jet does not have any parents, out of the loop!" << std::endl;
+      }
+}
+//maybe there is a more elegant way than the one below for matching...
+void HiInclusiveJetAnalyzer::RecoTruthSplitMatching(std::vector<fastjet::PseudoJet> &constituents_level1, fastjet::PseudoJet &hardest_level2, bool *bool_array, int *hardest_level1_split){
+    //for now only include geometric matching, maybe consider pt/z, Lund plane location, etc...
+  float min_dR = std::numeric_limits<float>::max();
+  size_t closest_level1 = 0;
+  // std::cout << "Starting loop over " << constituents_level1.size() << " particles" << std::endl;
+  for(size_t i{0};i<constituents_level1.size();++i){
+    float dR = constituents_level1.at(i).delta_R(hardest_level2);
+    if(min_dR > dR){
+      closest_level1 = i;
+      min_dR = dR;
+    }
+  }
+  // std::cout << "Compare particle " << static_cast<int>(closest_level1) << " with hardest split " << hardest_level1_split[jets_.nref] << std::endl;
+  if(static_cast<int>(closest_level1) == hardest_level1_split[jets_.nref] ){
+    bool_array[jets_.nref] = true;
+  }
+  else{
+    // std::cout << "Sorry, closest pair is " << min_dR << " away with index " << static_cast<int>(closest_level1) << " as opposed to " << hardest_level1_split[jets_.nref] << std::endl;
+    bool_array[jets_.nref] = false;
+  }
+}
+void HiInclusiveJetAnalyzer::TruthRecoRecoTruthMatching(){
+  // std::cout << jets_.jtdyn_split[jets_.nref] << " " << jets_.refdyn_split[jets_.nref] << " numbers of highest splits" << std::endl;
+  if( jets_.jtdyn_split[jets_.nref] == std::numeric_limits<int>::min() || jets_.refdyn_split[jets_.nref] == std::numeric_limits<int>::min() || jets_.jtJetConstituent.size() == 0 || jets_.refJetConstituent.size() == 0 ){
+    jets_.refdyn_isClosestToReco[jets_.nref] = false;
+
+    jets_.jtdyn_isClosestToTruth[jets_.nref] = false;
+    jets_.jtdyn_refdyn_dR[jets_.nref] = std::numeric_limits<float>::max();
+    return;
+  }
+  //mind how the split number is defined in the reclustering
+  fastjet::PseudoJet hardest_R_split = jets_.jtJetConstituent.at(jets_.jtdyn_split[jets_.nref]);
+  fastjet::PseudoJet hardest_T_split = jets_.refJetConstituent.at(jets_.refdyn_split[jets_.nref]);
+  // std::cout << hardest_R_split.eta() << " " << hardest_R_split.phi() << " hardest reco  splitting in matching" << std::endl;
+  // std::cout << hardest_T_split.eta() << " " << hardest_T_split.phi() << " hardest truth splitting in matching" << std::endl;
+  // std::cout << "Angle between hardest splits is dR = " << hardest_R_split.delta_R(hardest_T_split) << std::endl;
+  jets_.jtdyn_refdyn_dR[jets_.nref] = hardest_R_split.delta_R(hardest_T_split);
+  // std::cout << "truth loop" << std::endl;
+  RecoTruthSplitMatching(jets_.refJetConstituent, hardest_R_split, jets_.refdyn_isClosestToReco, jets_.refdyn_split);
+  // std::cout << "reco loop" << std::endl;
+  RecoTruthSplitMatching(jets_.jtJetConstituent,  hardest_T_split, jets_.jtdyn_isClosestToTruth, jets_.jtdyn_split);
 }
 
 int HiInclusiveJetAnalyzer::getPFJetMuon(const pat::Jet& pfJet,

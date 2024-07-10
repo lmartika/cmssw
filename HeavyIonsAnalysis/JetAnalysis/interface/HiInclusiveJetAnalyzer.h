@@ -53,6 +53,14 @@ private:
       fastjet::JetDefinition(fastjet::JetAlgorithm::antikt_algorithm, 2, fastjet::WTA_pt_scheme);
   //--------------------------------------------
 
+
+  void IterativeDeclusteringRec(double groom_type, double groom_combine, const reco::Jet& jet,    fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
+  void IterativeDeclusteringGen(double groom_type, double groom_combine, const reco::GenJet& jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
+  template<typename T> void IterativeDeclustering(double groom_type, double groom_combine, const T & jet,    fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
+  
+  void RecoTruthSplitMatching(std::vector<fastjet::PseudoJet> &constituents_level1, fastjet::PseudoJet &hardest_level2, bool *bool_array, int *hardest_level1_split);
+  void TruthRecoRecoTruthMatching();
+  
   //int getPFJetMuon(const pat::Jet& pfJet, const reco::PFCandidateCollection *pfCandidateColl);
   int getPFJetMuon(const pat::Jet& pfJet, const edm::View<pat::PackedCandidate>* pfCandidateColl);
 
@@ -87,6 +95,7 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVerticesToken_;
   edm::Handle<std::vector<reco::Vertex>> primaryVertices;
 
+  bool doChargedConstOnly_ = true;
   bool doMatch_;
   bool useVtx_;
   bool useRawPt_;
@@ -170,6 +179,44 @@ private:
     float jtm[MAXJETS]={0};
     float jtarea[MAXJETS]={0};
 
+    ///////// SUBSTR
+    float jtdyn_var[MAXJETS]={0};
+    int jtdyn_split[MAXJETS]={0};
+
+    // float jtdyn_theta[MAXJETS];
+    float jtdyn_deltaR[MAXJETS]={0};
+    float jtdyn_kt[MAXJETS]={0};
+    float jtdyn_z[MAXJETS]={0};
+    int jt_intjet_multi[MAXJETS]={0};
+    float jt_girth[MAXJETS]={0};
+
+    float refdyn_var[MAXJETS]={0};
+    int refdyn_split[MAXJETS]={0};
+    // float refdyn_theta[MAXJETS];
+    float refdyn_deltaR[MAXJETS]={0};
+    float refdyn_kt[MAXJETS]={0};
+    float refdyn_z[MAXJETS]={0};
+    int ref_intjet_multi[MAXJETS]={0};
+    float ref_girth[MAXJETS]={0};
+
+    
+    bool jtdyn_isClosestToTruth[MAXJETS]={0};
+    bool refdyn_isClosestToReco[MAXJETS]={0};
+    float jtdyn_refdyn_dR[MAXJETS]={0};
+    
+    /*    std::vector<std::vector<float>> jtSubJetPt;
+    std::vector<std::vector<float>> jtSubJetEta;
+    std::vector<std::vector<float>> jtSubJetPhi;
+    std::vector<std::vector<float>> jtSubJetM; */
+    std::vector<fastjet::PseudoJet> jtJetConstituent = {};
+    // std::vector<std::vector<float>> jtJetConstituentPhi;
+    // std::vector<int> jtJetConstituentHardestSplitN;
+    std::vector<fastjet::PseudoJet> refJetConstituent = {};
+    // std::vector<std::vector<float>> refJetConstituentPhi;
+    // std::vector<int> refJetConstituentHardestSplitN;
+    /////////////
+    
+    
     float jtmB[MAXJETS]={0};
     float jtBpt[MAXJETS]={0};
     float jtBntracks[MAXJETS]={0};
@@ -388,6 +435,11 @@ private:
     int refparton_flavor[MAXJETS]={0};
     int refparton_flavorForB[MAXJETS]={0};
 
+    float refsub11[MAXJETS]={0};
+    float refsub12[MAXJETS]={0};
+    float refsub21[MAXJETS]={0};
+    float refsub22[MAXJETS]={0};
+    
     float refptG[MAXJETS]={0};
     float refetaG[MAXJETS]={0};
     float refphiG[MAXJETS]={0};

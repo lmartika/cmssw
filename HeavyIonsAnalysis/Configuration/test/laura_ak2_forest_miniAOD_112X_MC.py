@@ -33,8 +33,8 @@ process.source = cms.Source("PoolSource",
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-     input = cms.untracked.int32(10)
-#    input = cms.untracked.int32(2000)
+#     input = cms.untracked.int32(10)
+     input = cms.untracked.int32(100)
     )
 
 ###############################################################################
@@ -215,7 +215,6 @@ if addCandidateTagging:
     process.load("RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi")
     process.pfImpactParameterTagInfos.candidates  = "packedPFCandidates"
     process.pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVertices"
-#    process.pfImpactParameterTagInfos.primaryVertex = "hiSelectedVertex"
     process.pfImpactParameterTagInfos.jets = "updatedPatJets"
 
     process.load("RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi")
@@ -260,6 +259,7 @@ if addCandidateTagging:
                       )
     process.akCs2PFJetAnalyzer.jetTag = "updatedCorrectedPatJets"
     process.akCs2PFJetAnalyzer.doCandidateBtagging = True
+    process.akCs2PFJetAnalyzer.doSubJets = False   # saves subjet kinematics per-jet
 
 if doTracks:
     process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
