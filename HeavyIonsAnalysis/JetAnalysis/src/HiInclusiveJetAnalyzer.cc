@@ -521,8 +521,8 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   // FILL JRA TREE
   jets_.nref = 0;
   jets_.nvtx = primaryVertices->size();
-  //  std::cout << "PV:" <<  primaryVertices->size() << std::endl;
-  //  std::cout << "PV:" <<  primaryVertices->at(0).position() << std::endl;
+  /*  std::cout << "PV:" <<  primaryVertices->size() << std::endl;
+      std::cout << "PV:" <<  primaryVertices->at(0).position() << std::endl; */
 
   //  std::cout << "Number of tracks: " << jets_.ntrk << std::endl; 
   if (doTracks_) jets_.ntrk = 0;
@@ -530,7 +530,8 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     jets_.nsvtx = 0;
     //jets_.ntrkInSvtxNotInJet = 0;
   }
-
+  int nsvtxCounterForTracks = 0;
+  
   if (doJetConstituents_) {
     jets_.jtConstituentsId.clear();
     jets_.jtConstituentsE.clear();
@@ -574,10 +575,11 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 
     ///////////////
     // DEBUG SVTX:
-    //    const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
-    const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex();
+    //    std::cout << "Try getting taginfo with label " << svTagInfoLabel_.c_str() << endl;
+    const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
+    // const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex();
     int nsv = svTagInfo->nVertices();
-    // std::cout << jet.hasTagInfo(svTagInfoLabel_.c_str()) << " " << nsv << std::endl;
+    if (nsv > 0) std::cout << jet.hasTagInfo(svTagInfoLabel_.c_str()) << " has svtxs " << nsv << std::endl;
     ////////////////
     
     auto pt = useRawPt_ ? jet.correctedJet("Uncorrected").pt() : jet.pt();
@@ -629,6 +631,127 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
         jets_.muchg[jets_.nref] = 0;
       }
     }
+
+    //    cout << "New jet and its tracks, pt jet and uncorrected " << jet.pt() << " " << jet.correctedJet("Uncorrected").pt()  << endl;
+    if (doTracks_ && jet.hasTagInfo(ipTagInfoLabel_.c_str())) {
+      jets_.jtNtrk[jets_.nref] = 0;
+      jets_.jtptCh[jets_.nref] = 0.;
+      const reco::CandIPTagInfo *ipTagInfo = jet.tagInfoCandIP(ipTagInfoLabel_.c_str());
+      const std::vector<reco::btag::TrackIPData> ipData = ipTagInfo->impactParameterData();
+      const std::vector<reco::CandidatePtr> ipTracks = ipTagInfo->selectedTracks();
+
+      reco::Candidate::PolarLorentzVector chJet(0., 0., 0., 0.);
+
+      // For debugging
+      // for (auto itIPTrack : ipTracks) {
+      //	  std::cout << " ip track: " << itIPTrack->pt() << " " <<  itIPTrack->eta() << " " <<  itIPTrack->phi() << " " <<  std::endl;
+      // 	}
+	
+      //  float ptcounter = 0;
+      for (const reco::CandidatePtr constit : jet.getJetConstituents()) {
+        // std::cout << "new jet constit with pt, eta, phi " << constit->pt() << " "  << constit->eta() << " "  << constit->phi() << " " << constit->charge() <<  std::endl;
+	//	ptcounter += constit->pt();
+        if (constit->charge() == 0) continue;
+        if (constit->pt() < trkPtCut_) continue;
+
+	// Find IPTrack that matches to a jet constitute track
+        reco::CandidatePtr itIPTrack;
+
+	int itrk = -1; // Counter for track index, probably there is something smarter to do. Used for fetching track IP data.
+	for (auto iterIPTrack : ipTracks) {
+	  float eps = 1e-5;                                                                                                                                                                                          itrk++;
+	  
+          if (std::abs(constit->eta()-iterIPTrack->eta())>eps) continue;                                                                                                                                   
+          else if (std::abs(constit->phi()-iterIPTrack->phi())>eps) continue;                                                                                                                                        else if (std::abs(constit->pt()-iterIPTrack->pt())>eps) continue;                                                                                                                                       
+          itIPTrack = iterIPTrack;
+	}
+
+	if (!(itIPTrack)) continue; 
+	
+        // TODO
+        // Check if the track was dropped from the aggregation
+        /* if (isMC_) {
+          bool drop = false;
+          double eps = 1e-4;
+          // std::cout << "before droppedTracks" << std::endl;
+          for (size_t idropped=0; idropped<droppedTracks->size(); idropped++) {
+            reco::PFCandidate droppedTrack = (*droppedTracks)[idropped];
+            if (std::abs(constit->eta()-droppedTrack.eta())>eps) continue;
+            if (std::abs(constit->phi()-droppedTrack.phi())>eps) continue;
+            if (std::abs(constit->pt()-droppedTrack.pt())>eps) continue;
+            drop = true;
+          }
+          if (drop) continue;
+          // std::cout << "after droppedTracks" << std::endl;
+	  } */
+
+        int ijetTrack = jets_.ntrk + jets_.jtNtrk[jets_.nref];
+
+        reco::Candidate::PolarLorentzVector constitV(0., 0., 0., 0.);
+        constitV.SetPt(constit->pt());
+        constitV.SetEta(constit->eta());
+        constitV.SetPhi(constit->phi());
+        constitV.SetM(constit->mass());
+        chJet += constitV;
+
+        const reco::btag::TrackIPData trkIPData = ipData[itrk];
+
+        jets_.trkJetId[ijetTrack] = jets_.nref;  
+
+        jets_.trkPt[ijetTrack] = constit->pt();
+        jets_.trkEta[ijetTrack] = constit->eta();
+        jets_.trkPhi[ijetTrack] = constit->phi();
+
+        jets_.trkIp3d[ijetTrack] = trkIPData.ip3d.value();
+        jets_.trkIp3dSig[ijetTrack] = trkIPData.ip3d.significance();
+
+        jets_.trkIp2d[ijetTrack] = trkIPData.ip2d.value();
+        jets_.trkIp2dSig[ijetTrack] = trkIPData.ip2d.significance();
+
+        jets_.trkIpProb3d[ijetTrack] = ipTagInfo->probabilities(0)[itrk];
+        jets_.trkIpProb2d[ijetTrack] = ipTagInfo->probabilities(1)[itrk];
+
+        jets_.trkDistToAxis[ijetTrack] = trkIPData.distanceToJetAxis.value();
+        jets_.trkDistToAxisSig[ijetTrack] = trkIPData.distanceToJetAxis.significance();
+
+        jets_.trkSvtxId[ijetTrack] = -1;
+        if (doSvtx_ && jet.hasTagInfo(svTagInfoLabel_.c_str())) {
+          const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
+          int nsv = svTagInfo->nVertices();
+          for (int isv = 0; isv < nsv; isv++) {
+            const std::vector<reco::CandidatePtr> svTracks = svTagInfo->vertexTracks(isv);
+            auto itSVTrack = std::find(svTracks.begin(), svTracks.end(), constit);
+            if (itSVTrack == svTracks.end()) continue;
+            jets_.trkSvtxId[ijetTrack] = nsvtxCounterForTracks + isv;
+          } // end sv loop for tracks
+        } // end doSvtx_
+
+        Int_t status = -1; // default, no match
+        if (isMC_ && trackToGenParticleMap->find(constit) != trackToGenParticleMap->end()) { 
+          edm::Ptr<pat::PackedGenParticle> matchGenParticle = trackToGenParticleMap->at(constit);
+          status = matchGenParticle->status();
+        }
+        jets_.trkMatchSta[ijetTrack] = status;
+        jets_.trkPdgId[ijetTrack] = constit->pdgId();
+
+        const reco::Track *constitTrack = constit->bestTrack();
+        if (constitTrack) {
+          // std::cout << "track exists " << std::endl;
+          // std::cout << "testTrack dz " << testTrack->dz() << std::endl;
+          jets_.trkDz[ijetTrack] = constitTrack->dz(primaryVertices->at(0).position());
+        } else {
+          jets_.trkDz[ijetTrack] = -100000.;
+        }
+
+        jets_.jtNtrk[jets_.nref]++;
+      } // jet constituent loop
+      //      std::cout << "pt from constituents" << ptcounter << std::endl;
+      
+      jets_.jtptCh[jets_.nref] = chJet.pt();
+      nsvtxCounterForTracks += jets_.jtNsvtx[jets_.nref];
+      jets_.ntrk += jets_.jtNtrk[jets_.nref];
+    } // endif doTracks_
+	
 
     if (doHiJetID_) {
       // Jet ID variables

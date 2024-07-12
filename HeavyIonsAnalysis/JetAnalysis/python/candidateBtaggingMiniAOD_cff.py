@@ -36,7 +36,7 @@ pfParticleNetAK4TagInfos.vertices = "offlineSlimmedPrimaryVerticesRecovery"
 pfParticleNetAK4JetTags.src = "pfParticleNetAK4TagInfos"
 
 from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
-ak4PFJets = ak4PFJets.clone(rParam = 0.4, src = 'packedPFCandidates')
+ak4PFJets = ak4PFJets.clone(jetPtMin = 1.0, rParam = 0.4, src = 'packedPFCandidates')
 
 unsubJets = cms.EDProducer("JetMatcherDR",
     matched = cms.InputTag("ak4PFJets"),

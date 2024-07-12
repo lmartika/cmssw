@@ -33,8 +33,8 @@ process.source = cms.Source("PoolSource",
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-     input = cms.untracked.int32(10)
-#    input = cms.untracked.int32(2000)
+    input = cms.untracked.int32(10)
+#    input = cms.untracked.int32(-1)
     )
 
 ###############################################################################
@@ -149,9 +149,9 @@ addR4Jets = False
 
 addCandidateTagging = True
 
-doTracks = False
+doTracks = True
 doSvtx = True
-doGenAnalysis = False
+doGenAnalysis = True
 
 if addR2Jets or addR4Jets :
     process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
@@ -215,7 +215,6 @@ if addCandidateTagging:
     process.load("RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi")
     process.pfImpactParameterTagInfos.candidates  = "packedPFCandidates"
     process.pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVertices"
-#    process.pfImpactParameterTagInfos.primaryVertex = "hiSelectedVertex"
     process.pfImpactParameterTagInfos.jets = "updatedPatJets"
 
     process.load("RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi")
