@@ -259,6 +259,8 @@ if addCandidateTagging:
                       )
     process.akCs2PFJetAnalyzer.jetTag = "updatedCorrectedPatJets"
     process.akCs2PFJetAnalyzer.doCandidateBtagging = True
+    
+process.akCs2PFJetAnalyzer.jetPtMin = cms.double(40.0)
 
 if doTracks:
     process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
