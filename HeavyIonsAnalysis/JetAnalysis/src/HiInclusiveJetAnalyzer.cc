@@ -113,8 +113,18 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
     doSubEvent_ = iConfig.getUntrackedParameter<bool>("doSubEvent", false);
   }
 
+  //  ptCut = iConfig.getParameter<double>("ptCut",1.);
+  ptCut = iConfig.getUntrackedParameter<double>("ptCut",1.);
+  trkInefRate_ = iConfig.getUntrackedParameter<double>("trkInefRate",0.);
 
   ///// This is for obtaining inputs for aggregation - clean and put things behind flags
+
+  //  aggregateHF = iConfig.getParameter<bool>("aggregateHF",true);
+  aggregateHF = iConfig.getUntrackedParameter<bool>("aggregateHF",false);
+  withTruthInfo_  = iConfig.getUntrackedParameter<bool>("withTruthInfo",false);
+  withCuts_  = iConfig.getUntrackedParameter<bool>("withCuts",false);
+  withTMVA_ = iConfig.getUntrackedParameter<bool>("withTMVA",false);  
+
 
   doSvtx_ = iConfig.getUntrackedParameter<bool>("doSvtx",false);
   if (doSvtx_) {
@@ -153,6 +163,8 @@ void HiInclusiveJetAnalyzer::beginJob() {
   t->Branch("jtpu", jets_.jtpu, "jtpu[nref]/F");
   t->Branch("jtm", jets_.jtm, "jtm[nref]/F");
   t->Branch("jtarea", jets_.jtarea, "jtarea[nref]/F");
+
+  t->Branch("massHF", jets_.massHF, "massHF[nref]/F");
 
   t->Branch("jtdyn_split",jets_.jtdyn_split,"jtdyn_split[nref]/I");
   // t->Branch("jtdyn_theta",jets_.jtdyn_theta,"jtdyn_theta[nref]/F");
@@ -531,13 +543,14 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 
   
   edm::Handle<reco::TrackToGenParticleMap> trackToGenParticleMap;
+  //  edm::Handle<reco::TrackToGenParticleMap> genConstitToGenParticleMap;
   if (isMC_ and doTracks_) {
     edm::Handle<reco::GenParticleCollection> genparts;
     iEvent.getByToken(genParticleSrc_, genparts);
 
     // Track-gen ptcl tagging
     iEvent.getByToken(trackToGenParticleMapToken_, trackToGenParticleMap);
-    //    std::cout << "Map size: " << trackToGenParticleMap->size() << std::endl;
+    //    std::cout << "TracktoGen Map size: " << trackToGenParticleMap->size() << std::endl;
   }
 
   iEvent.getByToken(primaryVerticesToken_, primaryVertices);
@@ -554,7 +567,24 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     //jets_.ntrkInSvtxNotInJet = 0;
   }
   int nsvtxCounterForTracks = 0;
+
+  // For aggregation
+  auto pseudoHFCollection = std::make_unique<std::vector<reco::PFCandidate>>();
+  auto droppedTrackCollection = std::make_unique<std::vector<reco::PFCandidate>>();
   
+  if (aggregateHF && withTMVA_) {
+    tmvaTagger = std::make_unique<TMVAEvaluator>();
+    tmvaTagger->initialize("Color:Silent:Error",
+			   "BDTG",
+			   tmva_path_.fullPath(),
+			   tmva_variable_names_,
+			   tmva_spectator_names_,
+			   false,
+			   false);
+  }
+
+  // ------
+
   if (doJetConstituents_) {
     jets_.jtConstituentsId.clear();
     jets_.jtConstituentsE.clear();
@@ -604,12 +634,12 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       // const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex();
       if (jet.hasTagInfo(svTagInfoLabel_.c_str())) {
 	int nsv = svTagInfo->nVertices();
-	//std::cout << "got vtx info" << std::endl;
+	//        std::cout << "got secondary vtx info" << std::endl;
       
 	jets_.nsvtx += nsv;
 	jets_.jtNsvtx[jets_.nref] = nsv;
 
-	if (nsv > 0) std::cout << jet.hasTagInfo(svTagInfoLabel_.c_str()) << " has svtxs " << nsv << std::endl;
+	// if (nsv > 0) std::cout << jet.hasTagInfo(svTagInfoLabel_.c_str()) << " number of svtxs: " << nsv << std::endl;
       }
     }
     
@@ -751,7 +781,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
           int nsv = svTagInfo->nVertices();
           for (int isv = 0; isv < nsv; isv++) {
             const std::vector<reco::CandidatePtr> svTracks = svTagInfo->vertexTracks(isv);
-            auto itSVTrack = std::find(svTracks.begin(), svTracks.end(), constit);
+            auto itSVTrack = std::find(svTracks.begin(), svTracks.end(), constit); // TODO: replace
             if (itSVTrack == svTracks.end()) continue;
             jets_.trkSvtxId[ijetTrack] = nsvtxCounterForTracks + isv;
           } // end sv loop for tracks
@@ -948,18 +978,74 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     jets_.jtsym[jets_.nref] = -999.;
     jets_.jtdroppedBranches[jets_.nref] = -999;
 
+    std::vector<fastjet::PseudoJet> jetConstituents = {};
+    reco::PFCandidate pseudoHF; // For aggregations
+
+    // aggregate B based on jet type
+    if (aggregateHF) {
+      std::cout << "Aggregation loop" << std::endl;
+      if (doGenJets_ && isMC_) {
+     // std::cout << "------->Aggregating HF for gen jet" << std::endl;
+	const reco::GenJet *genJet = jet.genJet();
+	if (genJet) {
+	  continue; // Keep this empty until debugged
+	  //std::cout << "Empty gen loop" << std::endl;
+	  // auto tempTuple = aggregateHFGen(*genJet, *candToGenParticleMap);
+	  // jetConstituents = std::get<0>(tempTuple);
+	  //p seudoHF = std::get<2>(tempTuple);
+	} else {
+	  continue;
+	}
+	// std::cout << "genjet i = " << jetIndex << " pt " << jet.pt() << " pt " << pseudoHF.pt() << std::endl;
+      } else {
+	std::cout << "------->Aggregating HF for reco jet" << std::endl; 
+	reco::TrackToGenParticleMap recoMap = isMC_ ? *trackToGenParticleMap : reco::TrackToGenParticleMap();
+	auto tempTuple = aggregateHFReco(jet, recoMap);
+	jetConstituents = std::get<0>(tempTuple);
+	auto droppedTracks = std::get<1>(tempTuple);
+	pseudoHF = std::get<2>(tempTuple);
+
+	jets_.massHF[jets_.nref] = pseudoHF.mass();
+	
+	droppedTrackCollection->insert(droppedTrackCollection->end(), droppedTracks.begin(), droppedTracks.end()); // TODO: check
+	// std::cout << "reco jet i = " << jetIndex << " pt " << jet.pt() << " mb " << pseudoHF.mass() << std::endl;
+      } 
+
+      pseudoHFCollection->push_back(pseudoHF);
+    } else { // We need to have similar inputs for IterativeDeclustering also when not aggregating
+      std::cout << "\tNot aggregating" << std::endl;
+      std::vector<edm::Ptr<reco::Candidate>> constituents = {}; 
+      if (doGenJets_ && isMC_) {
+	const reco::GenJet *genJet = jet.genJet();
+	if (genJet) constituents = genJet->getJetConstituents();
+      } else {
+	constituents = jet.getJetConstituents();
+      }
+      
+      for (edm::Ptr<reco::Candidate> constituent : constituents) {
+	if ((doChargedConstOnly_) && (constituent->charge() == 0)) continue;
+	if (constituent->pt() < ptCut) continue;
+	jetConstituents.push_back(fastjet::PseudoJet(constituent->px(), constituent->py(), constituent->pz(), constituent->energy()));
+      }
+    }
+
+
 
     ///// substructure stuff
+
     jets_.jtdyn_split[jets_.nref] = 0;
     // jets_.jtdyn_theta[jets_.nref] = 0;
     jets_.jtdyn_kt[jets_.nref] = 0;
     jets_.jtdyn_z[jets_.nref] = 0;
+
     fastjet::PseudoJet *sub1Gen = new fastjet::PseudoJet();
     fastjet::PseudoJet *sub2Gen = new fastjet::PseudoJet();
     fastjet::PseudoJet *sub1Hyb = new fastjet::PseudoJet();
     fastjet::PseudoJet *sub2Hyb = new fastjet::PseudoJet();
     //    IterativeDeclusteringRec(groom_type, groom_combine, jet, sub1Hyb, sub2Hyb);
-    IterativeDeclusteringRec(0.0, 0.0, jet, sub1Hyb, sub2Hyb);
+    //    IterativeDeclusteringRec(0.0, 0.0, jet, sub1Hyb, sub2Hyb);
+    IterativeDeclustering(jetConstituents, pseudoHF);
+   
     jets_.refpt[jets_.nref] = 0;
     jets_.refeta[jets_.nref] = 0;
     jets_.refphi[jets_.nref] = 0;
@@ -980,12 +1066,25 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     jets_.refsub12[jets_.nref] = 0;
     jets_.refsub21[jets_.nref] = 0;
     jets_.refsub22[jets_.nref] = 0;
-    // std::cout << jets_.jtJetConstituent.size() << " " << jets_.refJetConstituent.size() << " sizes of consts" << std::endl;
+    // std::cout << jets_.jtJetConstituent.size() << " " << jets_.refJetConstituent.size() << " sizes of consts" << std::endl; 
 
+    
     if (isMC_){
       const reco::GenJet * genjet = jet.genJet();
       if(!genjet) continue;
 
+      //TODO: correct map has to be debugged
+
+      /*      if (aggregateHF) {
+	std::cout << "Test gen level aggregation with map size " << trackToGenParticleMap->size() << std::endl;
+	auto tempTuple = aggregateHFGen(*genjet, *trackToGenParticleMap);
+	std::cout << "Ran aggregation" << endl;
+          jetConstituents = std::get<0>(tempTuple);
+          pseudoHF = std::get<2>(tempTuple);
+
+	  pseudoHFCollection->push_back(pseudoHF);
+	  } */
+      
       if(jet.genParton()){
         const reco::GenParticle & parton = *jet.genParton();
         jets_.refparton_pt[jets_.nref] = parton.pt();
@@ -998,16 +1097,18 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       jets_.refpt[jets_.nref] = genjet->pt();
       jets_.refeta[jets_.nref] = genjet->eta();
       jets_.refphi[jets_.nref] = genjet->phi();
-            //cout<<"jet daughters gen"<<genjet->numberOfDaughters()<<endl;
+
+      //cout<<"jet daughters gen"<<genjet->numberOfDaughters()<<endl;
       //      if(dopthatcut) if(pthat<0.35*genjet->pt()) continue;
 
       //      IterativeDeclusteringGen(groom_type, groom_combine, *genjet, sub1Gen, sub2Gen);
+      // Todo: aggregation outputs into declustering
       IterativeDeclusteringGen(0.0, 0.0, *genjet, sub1Gen, sub2Gen);
       
     }
     delete sub1Gen;
     delete sub2Gen;
-    delete sub1Hyb;
+     delete sub1Hyb;
     delete sub2Hyb;
     /////////////////////
     
@@ -1226,6 +1327,323 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   jets_ = {0};
 }
 
+// Function to aggregate gen particles coming from B decays into pseudo-B's 
+template <class T>
+HiInclusiveJetAnalyzer::jetConstituentsPseudoHFTuple HiInclusiveJetAnalyzer::aggregateHFGen(const T& genJet, reco::TrackToGenParticleMap candToGenParticleMap) const
+{
+  std::cout << "Aggregating HF at gen level" << std::endl;
+  std::cout << "Aggregating HF at gen level, map size " << candToGenParticleMap.size() << std::endl;
+
+  // Input and output particle collections
+  std::vector<edm::Ptr<reco::Candidate>> inputJetConstituents = genJet.getJetConstituents();
+  std::vector<fastjet::PseudoJet> outputJetConstituents = {};
+  std::vector<reco::PFCandidate> droppedTracks = {}; // this will remain empty
+  reco::PFCandidate outputPseudoHF;
+   
+  // Particle collection to aggregate into pseudo-Bs
+  std::map<int, std::vector<edm::Ptr<reco::Candidate>>> hfConstituentsMap;
+  reco::Candidate::PolarLorentzVector totalPseudoHF(0., 0., 0., 0.);
+
+  // Go over jet constituents
+  for (edm::Ptr<reco::Candidate> constit : inputJetConstituents) {
+    if(doChargedConstOnly_ && constit->charge() == 0) continue;
+    if(constit->pt() < ptCut) continue;
+
+    bool isNeutrino = (constit->pdgId() == 12); // nue
+    isNeutrino &= (constit->pdgId() == 14); // numu
+    isNeutrino &= (constit->pdgId() == 16); // nutau
+    isNeutrino &= (constit->pdgId() == 18); // nutau'
+    if (isNeutrino) {
+      std::cout << "found a neutrino" << std::endl;
+      continue;
+    }
+  
+    // Get status of matched gen particle
+    std::cout << "Try getting status" << std::endl;
+    std::cout << constit->px() << std::endl;
+    ///////Debug : is this supposed to work? Do we actually need something else for gen level?
+    for(auto it = candToGenParticleMap.cbegin(); it !=  candToGenParticleMap.cend(); ++it)
+      {
+	std::cout << it->first->px() << " " << it->second->px() << " "  << std::endl;
+      }
+
+    edm::Ptr<pat::PackedGenParticle> matchGenParticle = candToGenParticleMap.at(constit); // at does not work?
+    std::cout << "Try getting status 2" << std::endl;
+    int status = matchGenParticle->status();
+    std::cout << "Try getting status 3" << std::endl;
+
+    
+    // Add particle to output collection or from HF map
+    if (status == 1) {
+      fastjet::PseudoJet outConstit(constit->px(), constit->py(), constit->pz(), constit->energy());
+      outputJetConstituents.push_back(outConstit);
+    } else if (status >= 100) {
+      hfConstituentsMap[status].push_back(constit);
+      std::cout << "constit pt=" << constit->pt() << std::endl;
+    }
+  } // end constit loop 
+
+  // Aggregate particles coming from HF decays into pseudo-B/D's 
+  // and add them to the collection
+  for (auto it = hfConstituentsMap.begin(); it != hfConstituentsMap.end(); ++it) {
+    std::cout << "B with code " << it->first << " has " << (it->second).size() << " constituents" << std::endl;
+    reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
+    for (edm::Ptr<reco::Candidate> hfConstituent : it->second) {
+      reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
+      productLorentzVector.SetPt(hfConstituent->pt());
+      productLorentzVector.SetEta(hfConstituent->eta());
+      productLorentzVector.SetPhi(hfConstituent->phi());
+      productLorentzVector.SetM(hfConstituent->mass());
+      // TODO: difference of these?
+      pseudoHF += productLorentzVector;
+      totalPseudoHF += productLorentzVector;
+      //std::cout << "hf product lorentz vector: " << productLorentzVector << std::endl;
+
+      reco::PFCandidate daughter;
+      daughter.setP4(productLorentzVector);
+      outputPseudoHF.addDaughter(daughter);
+    }
+    // std::cout << "added HF with pt=" << pseudoHF.Pt() << " to collection" << std::endl;
+    fastjet::PseudoJet outPseudoHFConstit(pseudoHF.Px(), pseudoHF.Py(), pseudoHF.Pz(), pseudoHF.E());
+    outputJetConstituents.push_back(outPseudoHFConstit);
+  } // end map loop
+  // std::cout << "totalPseudoHF pt=" << totalPseudoHF.Pt() << std::endl;
+  // std::cout << "\tgenjet has " << hfConstituentsMap.size() << " B's " << std::endl;
+
+  outputPseudoHF.setP4(totalPseudoHF);
+  // std::cout << "vector mass " << totalPseudoHF.M() << " candidate mass " << outputPseudoHF.mass() << std::endl;
+  // std::cout << "\tjet constituents after aggregation" << std::endl;
+  // for (fastjet::PseudoJet constit : outputJetConstituents) {
+  //   std::cout << "\t\t-m=" << constit.m() << std::endl;
+  // }
+  return HiInclusiveJetAnalyzer::jetConstituentsPseudoHFTuple {outputJetConstituents, droppedTracks, outputPseudoHF};
+}
+ 
+// Function to aggregate reconstructed tracks into pseudo-B's 
+template <class T>
+typename HiInclusiveJetAnalyzer::jetConstituentsPseudoHFTuple HiInclusiveJetAnalyzer::aggregateHFReco(const T& jet, reco::TrackToGenParticleMap candToGenParticleMap) const
+{
+  std::cout << "Aggregating Bs in reco jet" << std::endl;
+
+  // Input and output particle collections
+  std::vector<edm::Ptr<reco::Candidate>> inputJetConstituents = jet.getJetConstituents();
+  std::vector<fastjet::PseudoJet> outputJetConstituents = {};
+  std::vector<reco::PFCandidate> droppedTracks = {};
+  reco::PFCandidate outputPseudoHF;
+
+  // Particle collection to aggregate into pseudo-Bs
+  std::map<int, std::vector<edm::Ptr<reco::Candidate>>> hfConstituentsMap;
+  reco::Candidate::PolarLorentzVector totalPseudoHF(0., 0., 0., 0.);
+
+  // Grab the IP and SV tag info from the jet
+  const reco::CandIPTagInfo *ipTagInfo = jet.tagInfoCandIP(ipTagInfoLabel_.c_str());
+  const std::vector<reco::btag::TrackIPData> ipData = ipTagInfo->impactParameterData();
+  const std::vector<edm::Ptr<reco::Candidate>> ipTracks = ipTagInfo->selectedTracks();
+
+  const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
+
+  // Go over jet constituents 
+  for (const edm::Ptr<reco::Candidate> constit : jet.getJetConstituents()) {
+    if (doChargedConstOnly_ && constit->charge() == 0) continue;
+    if (constit->pt() < ptCut) continue;
+
+    // Look for particle in ipTracks
+    //auto itIPTrack = std::find(ipTracks.begin(), ipTracks.end(), constit);
+    //if (itIPTrack == ipTracks.end()) continue;
+
+    reco::CandidatePtr itIPTrack;
+    int itrk = -1; 
+    for (auto iterIPTrack : ipTracks) {
+      float eps = 1e-5;                                                                                                                                                                                          itrk++;
+        
+      if (std::abs(constit->eta()-iterIPTrack->eta())>eps) continue;                                                                                                                                   
+      else if (std::abs(constit->phi()-iterIPTrack->phi())>eps) continue;                                                                                                                                        else if (std::abs(constit->pt()-iterIPTrack->pt())>eps) continue;                                                                                                                                       
+      itIPTrack = iterIPTrack;
+    }
+
+    if (!(itIPTrack)) continue; 
+
+    //    std::cout << "Matched a track in aggregation" << std::endl;
+
+    // For track inefficiency uncertainty 
+    const double range_from = 0;
+    const double range_to = 1;
+    std::random_device rand_dev;
+    std::mt19937 generator(rand_dev());
+    std::uniform_real_distribution<double> distr(range_from, range_to);
+    double rand_uniform = distr(generator);
+
+    if (rand_uniform < trkInefRate_) {
+      // std::cout << "skipping track" << std::endl;
+      reco::PFCandidate droppedTrack;
+      droppedTrack.setCharge(constit->charge());
+      droppedTrack.setP4(constit->p4());
+      droppedTrack.setPdgId(constit->pdgId());     
+      droppedTracks.push_back(droppedTrack);
+      continue;
+    } 
+
+    // [DEBUG] 
+    //     std::cout << "constit pt " << constit->pt() << ", m=" << constit->mass() << ", pdgId=" << constit->pdgId() << std::endl;
+
+    // Get status of particle (1 = not from HF, 100+ = from HF) 
+    int status = 1;
+
+    if (isMC_ && withTruthInfo_) { 
+       
+      if (candToGenParticleMap.find(constit) != candToGenParticleMap.end()) {
+	edm::Ptr<pat::PackedGenParticle> matchGenParticle = candToGenParticleMap.at(constit);
+        status = matchGenParticle->status();
+
+      }
+    } else {
+      // Initialize values 
+      const double missing_value = -1000000.;
+
+      float ip3dSig = missing_value;
+      float ip2dSig = missing_value;
+      float distanceToJetAxis = missing_value;
+      //      bool isLepton = false;
+      bool inSV = false;
+
+      float svtxdls = missing_value;
+      float svtxdls2d = missing_value;
+      float svtxm = missing_value;
+      float svtxmcorr = missing_value;
+      float svtxNtrk = missing_value;
+      float svtxnormchi2 = missing_value;
+      float svtxTrkPtOverSv = missing_value;
+
+      float jtpt = jet.pt();
+
+      // Get IP info 
+      int trkIPIndex = itrk; //itIPTrack - ipTracks.begin();
+      const reco::btag::TrackIPData trkIPdata = ipData[trkIPIndex];
+      ip3dSig = trkIPdata.ip3d.significance();
+      ip2dSig = trkIPdata.ip2d.significance();
+      distanceToJetAxis = trkIPdata.distanceToJetAxis.value();
+      //      int pdg = constit->pdgId();
+      // isLepton = (std::abs(pdg) == 11) || (std::abs(pdg) == 13);
+
+      // if nan go back to missing_value
+      if (ip3dSig != ip3dSig) ip3dSig = missing_value;
+      if (ip2dSig != ip2dSig) ip2dSig = missing_value;
+      if (distanceToJetAxis != distanceToJetAxis) distanceToJetAxis = missing_value;
+         
+      // Get SV info
+      for (uint ivtx = 0; ivtx < svTagInfo->nVertices(); ivtx++) {
+	std::vector<edm::Ptr<reco::Candidate>> isvTracks = svTagInfo->vertexTracks(ivtx);
+        auto itSVTrack = std::find(isvTracks.begin(), isvTracks.end(), constit); //TODO: replace std::find
+        if (itSVTrack == isvTracks.end()) continue;
+
+        inSV = true;
+
+        svtxNtrk = (float) svTagInfo->nVertexTracks(ivtx);
+        
+        Measurement1D m1D = svTagInfo->flightDistance(ivtx, 0);
+        svtxdls = m1D.significance();
+
+        Measurement1D m2D = svTagInfo->flightDistance(ivtx, 2);
+        svtxdls2d = m2D.significance();
+        
+        const reco::VertexCompositePtrCandidate svtx = svTagInfo->secondaryVertex(ivtx);
+        svtxm = svtx.p4().mass();
+
+        double svtxpt = svtx.p4().pt();
+        svtxTrkPtOverSv = constit->pt() / svtxpt;
+
+        //mCorr=srqt(m^2+p^2sin^2(th)) + p*sin(th) -> http://arxiv.org/pdf/1504.07670v1.pdf
+        double sinth = svtx.p4().Vect().Unit().Cross((svTagInfo->flightDirection(ivtx)).unit()).Mag2();
+        sinth = sqrt(sinth);
+        double underRoot = std::pow(svtxm, 2) + (std::pow(svtxpt, 2) * std::pow(sinth, 2));
+        svtxmcorr = std::sqrt(underRoot) + (svtxpt * sinth);
+
+        svtxnormchi2 = svtx.vertexNormalizedChi2();
+        svtxTrkPtOverSv = constit->pt() / svtxpt;
+
+        break;
+      } // end vtx loop
+
+      if (withCuts_) {
+	std::cout << "With Cuts" << std::endl;
+        if (inSV || (ip3dSig > 2.5)) {
+          status = 100;
+        } 
+      
+      } else if (withTMVA_) {
+        // [TODO]: create a map of all possible variables and 
+        // then make the input only include the variables from 
+        // tmva_variable_names_
+	std::map<std::string, float> inputs;
+        inputs["trkIp3dSig"] = ip3dSig;
+        inputs["trkIp2dSig"] = ip2dSig;
+        inputs["trkDistToAxis"] = distanceToJetAxis;
+        inputs["svtxdls"] = svtxdls;
+        inputs["svtxdls2d"] = svtxdls2d;
+        inputs["svtxm"] = svtxm;
+        inputs["svtxmcorr"] = svtxmcorr;
+        inputs["svtxnormchi2"] = svtxnormchi2;
+        inputs["svtxNtrk"] = svtxNtrk;
+        inputs["svtxTrkPtOverSv"] = svtxTrkPtOverSv;
+        inputs["jtpt"] = jtpt;
+
+        float prediction = -99.;
+
+        prediction = tmvaTagger->evaluate(inputs);
+        // std::cout << "prediction: " << prediction << std::endl;
+
+        if (prediction > -0.3) {
+          status = 100;
+        }
+      } // endif 
+    } // endif *not* with truth info
+
+    // Add particle to output collection or from HF map
+    if (status == 1) {
+      fastjet::PseudoJet outConstit(constit->px(), constit->py(), constit->pz(), constit->energy());
+      outputJetConstituents.push_back(outConstit);
+    } else if (status >= 100) {
+      std::cout << "Found status >100!" << std::endl;
+      hfConstituentsMap[status].push_back(constit);
+    }
+  } // end jet constituents loop
+  // Aggregate particles coming from HF decays into pseudo-B/C's 
+  // and add them to the collection
+  
+  for (auto itTrackFromHF = hfConstituentsMap.begin(); itTrackFromHF != hfConstituentsMap.end(); itTrackFromHF++) {
+    reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
+    for (edm::Ptr<reco::Candidate> hfConstituent : itTrackFromHF->second) {
+      reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
+      productLorentzVector.SetPt(hfConstituent->pt());
+      productLorentzVector.SetEta(hfConstituent->eta());
+      productLorentzVector.SetPhi(hfConstituent->phi());
+      productLorentzVector.SetM(hfConstituent->mass());
+      pseudoHF += productLorentzVector;
+      totalPseudoHF += productLorentzVector;
+
+      reco::PFCandidate daughter;
+      daughter.setP4(productLorentzVector);
+      outputPseudoHF.addDaughter(daughter);
+    }
+
+    // Add aggregated HF into the full jet constituent map
+    // Scale E with 100 to manipulate mass; needs to be undone after CS step
+    fastjet::PseudoJet outPseudoHFConstit(pseudoHF.Px(), pseudoHF.Py(), pseudoHF.Pz(), pseudoHF.E()*100);
+    std::cout << "Mass of the aggregated HF from PseudoJet: " << outPseudoHFConstit.m() << std::endl;
+  
+    outputJetConstituents.push_back(outPseudoHFConstit);
+  } // end tracks from B loop
+  
+  outputPseudoHF.setP4(totalPseudoHF);
+  //  std::cout << "vector pt = " << totalPseudoHF.pt() << ", reco::PFCandidate pt = " << outputPseudoHF.pt() << std::endl;
+
+  // std::cout << "end aggregation" << std::endl;
+  return HiInclusiveJetAnalyzer::jetConstituentsPseudoHFTuple {outputJetConstituents, droppedTracks, outputPseudoHF};
+} // end aggregateHFReco()
+
+
+
+
 void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double groom_combine, const reco::Jet& jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2)
 {
   //  TRandom *r1 = new TRandom3(0);
@@ -1252,9 +1670,9 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double 
         // Geometrical PF Candidate x Jet Constituent Matching - Added by Bharadwaj - Apr 2023
         // poor man's matching, someone fix please
     // std::vector<int> vec_jet_consituent_charge;
-    for(auto it = daughters.begin(); it!=daughters.end(); ++it){
+    for (auto it = daughters.begin(); it!=daughters.end(); ++it){
       //if we want only charged constituents and the daughter charge is 0, skip it
-      if(doChargedConstOnly_ && (**it).charge()==0) continue;
+      if (doChargedConstOnly_ && (**it).charge()==0) continue;
       double PFE_scale = 1.;
       //if it is MC, rescale the 4-momentum of the charged particles (we accept only them above) by pfCCES(+-1%)
       //      if(isMC_) PFE_scale = pfChargedCandidateEnergyScale_;
@@ -1270,7 +1688,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double 
       jet_girth += mypart.perp()*mypart.delta_R(myjet)/myjet.perp();
     }
     // std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
-    if(particles.empty()){
+    if (particles.empty()){
       // jets_.jtdyn_var[jets_.nref] = - std::numeric_limits<double>::max();
       jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
       jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
@@ -1442,13 +1860,13 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringGen(double groom_type, double 
       } 
 }
 
-template <typename T>
-void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double groom_combine, const T &jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2)
+// Iteratice declustering for aggregated jets, inputs are the aggregated constituent collection and aggregated HF candidate. TODO: check how to handle genJets
+void HiInclusiveJetAnalyzer::IterativeDeclustering(std::vector<fastjet::PseudoJet> jetConstituents, reco::PFCandidate pseudoHF)
 {
   //  TRandom *r1 = new TRandom3(0);
   int intjet_multi = 0;
   float jet_girth = 0;
-	Int_t nsplit = 0;
+  Int_t nsplit = 0;
   double dyn_kt = std::numeric_limits<double>::min();
   int dyn_split = 0;
   double z = 0;
@@ -1459,16 +1877,18 @@ void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double gro
   fastjet::JetDefinition jet_def(fastjet::genkt_algorithm,jet_radius_ca,0,static_cast<fastjet::RecombinationScheme>(0), fastjet::Best);
   fastjet::PseudoJet myjet;
   fastjet::PseudoJet mypart;
-  myjet.reset(jet.p4().px(),jet.p4().py(),jet.p4().pz(),jet.p4().e());
+  //  myjet.reset(jet.p4().px(),jet.p4().py(),jet.p4().pz(),jet.p4().e());
+  // TODO: Follow the HF
   // Reclustering jet constituents with new algorithm
   try{
-    std::vector<fastjet::PseudoJet> particles = {};                         // Different thing to be done with GEN jets
-    auto daughters = jet.getJetConstituents();
+    
+    //std::vector<fastjet::PseudoJet> particles = {};                         // Different thing to be done with GEN jets
+    //auto daughters = jetConstituents; //jet.getJetConstituents();
         // std::cout << "Number of pfCand " << pfCandidates.size() << std::endl;
         // Geometrical PF Candidate x Jet Constituent Matching - Added by Bharadwaj - Apr 2023
         // poor man's matching, someone fix please
     // std::vector<int> vec_jet_consituent_charge;
-    for(auto it = daughters.begin(); it!=daughters.end(); ++it){  // Should this in general be skipped for genjets (right now configured PFEscale = 1)? -> could add isgenjet boolean?
+    /*   for(auto it = daughters.begin(); it!=daughters.end(); ++it){  // Should this in general be skipped for genjets (right now configured PFEscale = 1)? -> could add isgenjet boolean?
       //if we want only charged constituents and the daughter charge is 0, skip it
       if(doChargedConstOnly_ && (**it).charge()==0) continue;
       double PFE_scale = 1.;
@@ -1480,13 +1900,15 @@ void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double gro
       //  if(r1->Uniform(0,1)<0.05) continue;
       // }
       // std::cout << "Rescaling charged pfCand energy by " << PFE_scale << std::endl;
-      particles.push_back(fastjet::PseudoJet((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale));
+        particles.push_back(fastjet::PseudoJet((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale));
       mypart.reset((**it).px()*PFE_scale, (**it).py()*PFE_scale, (**it).pz()*PFE_scale, (**it).energy()*PFE_scale);
       intjet_multi++;
       jet_girth += mypart.perp()*mypart.delta_R(myjet)/myjet.perp();
-    }
+    } */
     // std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
-    if(particles.empty()){
+    
+    if (jetConstituents.size() == 0) {
+    //if(particles.empty()){
       // jets_.jtdyn_var[jets_.nref] = - std::numeric_limits<double>::max();
       jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
       jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
@@ -1497,13 +1919,14 @@ void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double gro
       throw(123);
     }
     // std::cout << "Clustering " << particles.size() << " number of reco particles" << std::endl;
-    fastjet::ClusterSequence csiter(particles, jet_def);
+    fastjet::ClusterSequence csiter(jetConstituents, jet_def);
     std::vector<fastjet::PseudoJet> output_jets = csiter.inclusive_jets(0);
     output_jets = sorted_by_pt(output_jets);
     fastjet::PseudoJet jj = output_jets[0];
     fastjet::PseudoJet j1;
     fastjet::PseudoJet j2;
     fastjet::PseudoJet highest_splitting;
+    
     if(!jj.has_parents(j1,j2)){
       jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();
       jets_.jtdyn_deltaR[jets_.nref] = - std::numeric_limits<double>::max();
@@ -1517,7 +1940,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double gro
     while(jj.has_parents(j1,j2)){
       if (j1.perp() < j2.perp()) std::swap(j1,j2); // j1 is the harder subjet
       z = j2.perp()/(j1.perp()+j2.perp());
-      if (z > 0.1) { // TODO: do not hard code these things..
+      if (z > 0.1) { // TODO: SD vs latekt, define threshold and method in the python configuration
 	double delta_R = j1.delta_R(j2);	
 	double k_t = j2.perp()*delta_R;
 	//	highest_splitting = j2; // is this needed?
@@ -1539,7 +1962,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double gro
     jets_.jt_intjet_multi[jets_.nref] = intjet_multi;
     jets_.jt_girth[jets_.nref] = jet_girth;
   } 
-  catch (fastjet::Error) { /*return -1;*/ }
+  catch (fastjet::Error const&) { /*return -1;*/ }
   catch (Int_t MyNum){
     if(MyNum == 123)
          std::cout << "Whoops, seems the number of charged jet constituents is 0! Setting all reco jet split variables to numeric min." << std::endl;
@@ -1547,6 +1970,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclustering(double groom_type, double gro
          std::cout << "Jet does not have any parents, out of the loop!" << std::endl;
       }
 }
+
 //maybe there is a more elegant way than the one below for matching...
 void HiInclusiveJetAnalyzer::RecoTruthSplitMatching(std::vector<fastjet::PseudoJet> &constituents_level1, fastjet::PseudoJet &hardest_level2, bool *bool_array, int *hardest_level1_split){
     //for now only include geometric matching, maybe consider pt/z, Lund plane location, etc...

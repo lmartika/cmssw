@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <random>
 
 // ROOT headers
 #include "TTree.h"
@@ -22,6 +23,7 @@
 #include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
 #include "fastjet/contrib/Njettiness.hh"
+#include "CommonTools/MVAUtils/interface/TMVAEvaluator.h"
 
 #include "AnalysisDataFormats/TrackInfo/interface/TrackToGenParticleMap.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
@@ -53,10 +55,15 @@ private:
       fastjet::JetDefinition(fastjet::JetAlgorithm::antikt_algorithm, 2, fastjet::WTA_pt_scheme);
   //--------------------------------------------
 
+  typedef std::tuple<std::vector<fastjet::PseudoJet>, std::vector<reco::PFCandidate>, reco::PFCandidate> jetConstituentsPseudoHFTuple;
 
+  template <class T> jetConstituentsPseudoHFTuple aggregateHFGen(const T&, reco::TrackToGenParticleMap) const;
+  template <class T> jetConstituentsPseudoHFTuple aggregateHFReco(const T&, reco::TrackToGenParticleMap) const;
+  
   void IterativeDeclusteringRec(double groom_type, double groom_combine, const reco::Jet& jet,    fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
   void IterativeDeclusteringGen(double groom_type, double groom_combine, const reco::GenJet& jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
-  template<typename T> void IterativeDeclustering(double groom_type, double groom_combine, const T & jet,    fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
+  //Decluster jets from aggregation
+  void IterativeDeclustering(std::vector<fastjet::PseudoJet> jetConstituents, reco::PFCandidate pseudoHF);
   
   void RecoTruthSplitMatching(std::vector<fastjet::PseudoJet> &constituents_level1, fastjet::PseudoJet &hardest_level2, bool *bool_array, int *hardest_level1_split);
   void TruthRecoRecoTruthMatching();
@@ -95,7 +102,23 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVerticesToken_;
   edm::Handle<std::vector<reco::Vertex>> primaryVertices;
 
+  std::unique_ptr<TMVAEvaluator> tmvaTagger;
+  edm::FileInPath tmva_path_;
+  std::vector<std::string> tmva_variable_names_;
+  std::vector<std::string> tmva_spectator_names_;
+
   bool doChargedConstOnly_ = true;
+
+  double ptCut;
+  double trkInefRate_;
+
+  //TOOD: these to be read from the .py
+  bool aggregateHF;
+  bool withTruthInfo_;
+  bool withCuts_;
+  bool withTMVA_;
+  bool doGenJets_ = false;
+  
   bool doMatch_;
   bool useVtx_;
   bool useRawPt_;
@@ -421,6 +444,9 @@ private:
     int trkPdgId[MAXTRACKS]={0};
     int trkMatchSta[MAXTRACKS]={0};
 
+    float massHF[MAXJETS]={0};
+    std::vector<std::vector<float>> massCand = {};
+    
     float refpt[MAXJETS]={0};
     float refeta[MAXJETS]={0};
     float refphi[MAXJETS]={0};

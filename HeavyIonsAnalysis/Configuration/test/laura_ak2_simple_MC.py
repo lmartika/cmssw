@@ -26,16 +26,13 @@ process.HiForestInfo.info = cms.vstring("HiForest, miniAOD, 112X, mc")
 process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     fileNames = cms.untracked.vstring(
-#        '/store/himc/HINPbPbSpring21MiniAOD/DiJet_pThat-15_TuneCP5_HydjetDrumMB_5p02TeV_Pythia8/MINIAODSIM/FixL1CaloGT_New_Release_112X_upgrade2018_realistic_HI_v9-v1/2520000/00147e49-765a-424c-a7e0-29860f11847d.root'
-        'file:/eos/user/l/lamartik/testsamples/pbpbdijet2018/00147e49-765a-424c-a7e0-29860f11847d.root'
-#        '/store/himc/HINPbPbSpring21MiniAOD/Bjet_pThat-15_TuneCP5_HydjetDrumMB_5p02TeV_Pythia8/MINIAODSIM/FixL1CaloGT_New_Release_112X_upgrade2018_realistic_HI_v9-v1/2530000/043213d2-944a-4e18-b1b5-ef71e93ef850.root'
-#        '/store/himc/RunIISummer20UL17pp5TeVMiniAODv2/QCD_pThat-15_bJet_TuneCP5_5p02TeV-pythia8/MINIAODSIM/106X_mc2017_realistic_forppRef5TeV_v3-v3/2530000/011A0E54-8E68-1345-AA80-1258126F75C1.root'
+        'file:/eos/user/l/lamartik/testsamples/pbpbbjet2018/043213d2-944a-4e18-b1b5-ef71e93ef850.root'
     ),
 )
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1000)
+    input = cms.untracked.int32(10)
 #    input = cms.untracked.int32(-1)
     )
 
@@ -101,27 +98,11 @@ from HeavyIonsAnalysis.EventAnalysis.hltobject_cfi import trigger_list_mc
 process.hltobject.triggerNames = trigger_list_mc
 
 ################################
-# electrons, photons, muons
-SS2018PbPbMC = "HeavyIonsAnalysis/EGMAnalysis/data/SS2018PbPbMC.dat"
-process.load('HeavyIonsAnalysis.EGMAnalysis.correctedElectronProducer_cfi')
-process.correctedElectrons.correctionFile = SS2018PbPbMC
-
-process.load('HeavyIonsAnalysis.EGMAnalysis.ggHiNtuplizer_cfi')
-process.ggHiNtuplizer.doGenParticles = cms.bool(True)
-process.ggHiNtuplizer.doMuons = cms.bool(False)
-process.ggHiNtuplizer.electronSrc = "correctedElectrons"
-process.load("TrackingTools.TransientTrack.TransientTrackBuilder_cfi")
-################################
 # jet reco sequence
 process.load('HeavyIonsAnalysis.JetAnalysis.akCs4PFJetSequence_pponPbPb_mc_cff')
 ################################
 # tracks
 process.load("HeavyIonsAnalysis.TrackAnalysis.TrackAnalyzers_cff")
-#muons
-process.load("HeavyIonsAnalysis.MuonAnalysis.unpackedMuons_cfi")
-process.load("HeavyIonsAnalysis.MuonAnalysis.muonAnalyzer_cfi")
-process.muonAnalyzer.doGen = cms.bool(True)
-
 
 process.genJetSequence = cms.Sequence()
 
@@ -141,7 +122,6 @@ process.forest = cms.Path(
     process.hiEvtAnalyzer +
     process.HiGenParticleAna + 
     process.genJetSequence
-#    process.ggHiNtuplizer +
     )
 
 #customisation
@@ -151,9 +131,15 @@ addR4Jets = False
 
 addCandidateTagging = True
 
-doTracks = True
-doSvtx = True
+doTracks = False    # For this you need the gen level analysis on
 doGenAnalysis = True
+
+doSvtx = True
+
+# For aggregating with Truth info you need to turn doTracks on
+aggregate = False
+useTruth = True
+useTMVA = False # We don't have this option available yet
 
 if addR2Jets or addR4Jets :
     process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
@@ -183,8 +169,6 @@ if addR2Jets or addR4Jets :
 
 # To apply PNET we have to remove the JEC first.  We could have just done this before the JEC is applied, but I copied this from the pp workflow
 # Maybe something to clean up for the future
-# Also note that it's only setup for R=0.4 for the moment. -> own edit to AK2
-
 
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 
@@ -265,6 +249,14 @@ if addCandidateTagging:
     process.akCs2PFJetAnalyzer.jetPtMin = cms.double(70.0)
     process.akCs2PFJetAnalyzer.doSubJets = False   # saves subjet kinematics per-jet
 
+if aggregate:
+    process.akCs2PFJetAnalyzer.aggregateHF = cms.untracked.bool(True)
+    if useTruth:
+        process.akCs2PFJetAnalyzer.withTruthInfo = cms.untracked.bool(True)
+    if useTMVA:
+        process.akCs2PFJetAnalyzer.withTMVA = cms.untracked.bool(False)
+
+
 if doTracks:
     process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
     process.akCs2PFJetAnalyzer.ipTagInfoLabel = cms.untracked.string(ipTagInfoLabel_)
@@ -274,8 +266,7 @@ if doSvtx:
 
 # aggregateHF = cms.bool(doAggregation) -> where do we put this? -> B-tagged jets?
 
-if doGenAnalysis:
-## Track-Gen-matches, try to use AK2    
+if doGenAnalysis:      ## Track-Gen-matches, try to use AK2    
     process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
     process.genJetSequence += process.mergedGenParticles
     ## Produces a reco::GenParticleCollection named mergedGenParticles
