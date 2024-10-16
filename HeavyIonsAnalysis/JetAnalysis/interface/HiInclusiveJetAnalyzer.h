@@ -57,9 +57,6 @@ private:
 
   typedef std::tuple<std::vector<fastjet::PseudoJet>, std::vector<reco::PFCandidate>, reco::PFCandidate> jetConstituentsPseudoHFTuple;
 
-  template <class T> jetConstituentsPseudoHFTuple aggregateHFGen(const T&, reco::TrackToGenParticleMap) const;
-  template <class T> jetConstituentsPseudoHFTuple aggregateHFReco(const T&, reco::TrackToGenParticleMap) const;
-  
   void IterativeDeclusteringRec(double groom_type, double groom_combine, const reco::Jet& jet,    fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
   void IterativeDeclusteringGen(double groom_type, double groom_combine, const reco::GenJet& jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2);
   //Decluster jets from aggregation
