@@ -296,8 +296,22 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                     if (constit->pt() < ptCut_) continue;
 
                     // Look for particle in ipTracks
-                    auto itIPTrack = std::find(ipTracks.begin(), ipTracks.end(), constit);
-                    if (itIPTrack == ipTracks.end()) continue;
+                    //auto itIPTrack = std::find(ipTracks.begin(), ipTracks.end(), constit);
+                    //if (itIPTrack == ipTracks.end()) continue;
+		    
+		    reco::CandidatePtr itIPTrack;
+		    int trkIPIndex = -1;
+		    for (auto iterIPTrack : ipTracks) {
+		      float eps = 1e-5;                                                                                                                                
+		      trkIPIndex++;
+		        
+		      if (std::abs(constit->eta()-iterIPTrack->eta())>eps) continue;
+		      else if (std::abs(constit->phi()-iterIPTrack->phi())>eps) continue;
+		      else if (std::abs(constit->pt()-iterIPTrack->pt())>eps) continue;
+		      itIPTrack = iterIPTrack;
+		    }
+
+		    if (!(itIPTrack)) continue; 
 
                     // For track inefficiency uncertainty 
                     const double range_from = 0;
@@ -344,7 +358,6 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                         float jtpt = jet.pt();
                         
                         // Get IP info 
-                        int trkIPIndex = itIPTrack - ipTracks.begin();
                         const reco::btag::TrackIPData trkIPdata = ipData[trkIPIndex];
                         ip3dSig = trkIPdata.ip3d.significance();
                         ip2dSig = trkIPdata.ip2d.significance();
@@ -361,8 +374,21 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
             
                         for (uint ivtx = 0; ivtx < svTagInfo->nVertices(); ivtx++) {
                             std::vector<edm::Ptr<reco::Candidate>> isvTracks = svTagInfo->vertexTracks(ivtx);
-                            auto itSVTrack = std::find(isvTracks.begin(), isvTracks.end(), constit);
-                            if (itSVTrack == isvTracks.end()) continue;
+                            // auto itSVTrack = std::find(isvTracks.begin(), isvTracks.end(), constit);
+                            // if (itSVTrack == isvTracks.end()) continue;
+			    
+			    reco::CandidatePtr itSVTrack;
+			    for (auto iterSVTrack : isvTracks) {
+			      float eps = 1e-5;
+
+			      if (std::abs(constit->eta()-iterSVTrack->eta())>eps) continue;
+			      else if (std::abs(constit->phi()-iterSVTrack->phi())>eps) continue;
+                              else if (std::abs(constit->pt()-iterSVTrack->pt())>eps) continue;
+
+			      itSVTrack = iterSVTrack;
+			    }
+
+			    if (!(itSVTrack)) continue; 
 
                             inSV = true;
 
