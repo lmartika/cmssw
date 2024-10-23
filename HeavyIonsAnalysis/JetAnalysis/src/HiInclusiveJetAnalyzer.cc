@@ -990,8 +990,8 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     fastjet::PseudoJet *sub2Gen = new fastjet::PseudoJet();
     fastjet::PseudoJet *sub1Hyb = new fastjet::PseudoJet();
     fastjet::PseudoJet *sub2Hyb = new fastjet::PseudoJet();
-    //    IterativeDeclusteringRec(groom_type, groom_combine, jet, sub1Hyb, sub2Hyb);
-    //    IterativeDeclusteringRec(0.0, 0.0, jet, sub1Hyb, sub2Hyb);
+    //IterativeDeclusteringRec(groom_type, groom_combine, jet, sub1Hyb, sub2Hyb);
+        IterativeDeclusteringRec(0.0, 0.0, jet, sub1Hyb, sub2Hyb);
     // IterativeDeclustering(jetConstituents, pseudoHF);
    
     jets_.refpt[jets_.nref] = 0;
@@ -1270,6 +1270,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double groom_combine, const reco::Jet& jet, fastjet::PseudoJet *sub1, fastjet::PseudoJet *sub2)
 {
   //  TRandom *r1 = new TRandom3(0);
+  std::cout << "running declustering" << std::endl;
   int intjet_multi = 0;
   float jet_girth = 0;
   Int_t nsplit = 0;
@@ -1289,7 +1290,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double 
   try{
     std::vector<fastjet::PseudoJet> particles = {};                         
     auto daughters = jet.getJetConstituents();
-        // std::cout << "Number of pfCand " << pfCandidates.size() << std::endl;
+    //        std::cout << "Number of pfCand " << pfCandidates.size() << std::endl;
         // Geometrical PF Candidate x Jet Constituent Matching - Added by Bharadwaj - Apr 2023
         // poor man's matching, someone fix please
     // std::vector<int> vec_jet_consituent_charge;
@@ -1310,7 +1311,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(double groom_type, double 
       intjet_multi++;
       jet_girth += mypart.perp()*mypart.delta_R(myjet)/myjet.perp();
     }
-    // std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
+    std::cout << "Particle container has " << particles.size() << " reco particles" << std::endl;
     if (particles.empty()){
       // jets_.jtdyn_var[jets_.nref] = - std::numeric_limits<double>::max();
       jets_.jtdyn_split[jets_.nref] = std::numeric_limits<int>::min();

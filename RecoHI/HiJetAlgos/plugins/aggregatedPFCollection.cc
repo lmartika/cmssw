@@ -60,6 +60,8 @@ public:
     explicit aggregatedPFCollection(const edm::ParameterSet&);
     ~aggregatedPFCollection();
 
+   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
+
 private:
     virtual void beginJob() ;
     virtual void produce(edm::Event&, const edm::EventSetup&);
@@ -137,13 +139,6 @@ aggregatedPFCollection::aggregatedPFCollection(const edm::ParameterSet& iConfig)
 
     if (aggregateHF_ && isMC_) candToGenParticleMapToken_ = consumes<reco::TrackToGenParticleMap>(iConfig.getParameter<edm::InputTag>("candToGenParticleMap"));
 
-    // Initialize objects 
-    if (aggregateHF_ && withXGB_) {
-        //xgbTagger = std::make_unique<BoosterHandle>();
-        //XGBoosterCreate(NULL, 0, &(*xgbTagger));
-        //auto res = XGBoosterLoadModel(*xgbTagger, xgb_path_.fullPath().c_str());    
-    }
-
     if (aggregateHF_ && withTMVA_) {
         tmvaTagger = std::make_unique<TMVAEvaluator>();
         tmvaTagger->initialize("Color:Silent:Error",
@@ -172,18 +167,17 @@ aggregatedPFCollection::~aggregatedPFCollection()
 
 void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& iSetup){
 
-
     auto newPFCandCollection = std::make_unique<reco::PFCandidateCollection>();
 
     edm::Handle<pat::JetCollection> jets;
     iEvent.getByToken(jetSrc_, jets);    
 
 
-    edm::Handle<std::vector<reco::PFCandidate>> pfcands;
-    bool isPF = iEvent.getByToken(constitSrc_, pfcands);
+    //    edm::Handle<std::vector<reco::PFCandidate>> pfcands;
+    // bool isPF = iEvent.getByToken(constitSrc_, pfcands);
 
-    edm::Handle<edm::View<pat::PackedCandidate>> pfcandsPacked;
-    bool isPackedPF = iEvent.getByToken(packedConstitSrc_, pfcandsPacked);
+    // edm::Handle<edm::View<pat::PackedCandidate>> pfcandsPacked;
+    // bool isPackedPF = iEvent.getByToken(packedConstitSrc_, pfcandsPacked);
 
     // -- For aggregation -- //
     edm::Handle<reco::TrackToGenParticleMap> candToGenParticleMap;
@@ -271,7 +265,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                 
             else {
 
-		        // std::cout << "------->Aggregating HF for reco jet" << std::endl; 
+		std::cout << "------->Aggregating HF for reco jet" << std::endl; 
 
                 reco::TrackToGenParticleMap recoMap = isMC_ ? *candToGenParticleMap : reco::TrackToGenParticleMap();	        
 
@@ -344,7 +338,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                         float ip3dSig = missing_value;
                         float ip2dSig = missing_value;
                         float distanceToJetAxis = missing_value;
-                        bool isLepton = false;
+			//                        bool isLepton = false;
                         bool inSV = false;
 
                         float svtxdls = missing_value;
@@ -362,8 +356,8 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                         ip3dSig = trkIPdata.ip3d.significance();
                         ip2dSig = trkIPdata.ip2d.significance();
                         distanceToJetAxis = trkIPdata.distanceToJetAxis.value();
-                        int pdg = constit->pdgId();
-                        isLepton = (std::abs(pdg) == 11) || (std::abs(pdg) == 13);
+			//                         int pdg = constit->pdgId();
+			//                        isLepton = (std::abs(pdg) == 11) || (std::abs(pdg) == 13);
 
                         // if nan go back to missing_value
                         if (ip3dSig != ip3dSig) ip3dSig = missing_value;
@@ -423,12 +417,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                             }
                         }
 
-                        else if (withXGB_) {
-                            float isLeptonBDT = (isLepton) ? 1. : 0.;
-
-                        }
-
-                        else if (withTMVA_) {
+			else if (withTMVA_) {
                             std::map<std::string, float> inputs;
                             inputs["trkIp3dSig"] = ip3dSig;
                             inputs["trkIp2dSig"] = ip2dSig;
@@ -472,6 +461,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
     
                 // Aggregate particles coming from HF decays into pseudo-B/C's  and add them to the collection
                 for (auto itTrackFromHF = hfConstituentsMap.begin(); itTrackFromHF != hfConstituentsMap.end(); itTrackFromHF++) {
+		  std::cout << "In aggregation loop" << std::endl;
                     reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
                     for (edm::Ptr<reco::Candidate> hfConstituent : itTrackFromHF->second) {
                         reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
@@ -496,7 +486,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
         }
 
         else {
-            // std::cout << "\tNot aggregating" << std::endl;
+            std::cout << "\tNot aggregating" << std::endl;
             std::vector<edm::Ptr<reco::Candidate>> constituents = {}; 
             if (doGenJets_ && isMC_) {
                 const reco::GenJet *genJet = jet.genJet();
@@ -504,20 +494,65 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
             } 
             else {
                 constituents = jet.getJetConstituents();
+		std::cout << "try jet pt " << jet.pt() << " " << std::endl;
             }
 
-            for (edm::Ptr<reco::Candidate> constituent : constituents) {
-                if ((chargedOnly_) && (constituent->charge() == 0)) continue;
-                if (constituent->pt() < ptCut_) continue;
-                jetConstituents.push_back(fastjet::PseudoJet(constituent->px(), constituent->py(), constituent->pz(), constituent->energy()));
-            }
+	    for (edm::Ptr<reco::Candidate> constituent : constituents) {
+	      //std::cout << "Test const " << constituent->pt() << std::endl;
+	      if ((chargedOnly_) && (constituent->charge() == 0)) continue;
+	      if (constituent->pt() < ptCut_) continue;
+	      jetConstituents.push_back(fastjet::PseudoJet(constituent->px(), constituent->py(), constituent->pz(), constituent->energy()));
+		}  
         }
 
     } // end jet loop
-
-
+    
     iEvent.put(std::move(newPFCandCollection));
   
+}
+
+
+//template <class T>
+void aggregatedPFCollection::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  edm::ParameterSetDescription desc;
+  desc.setComment("New PF Collection");
+
+  // Input collections
+  //   desc.add<edm::InputTag>("jetSrc", edm::InputTag("slimmedJets"));
+  desc.add<edm::InputTag>("jetSrc", edm::InputTag("updatedPatJets"));
+  desc.add<edm::InputTag>("constitSrc", edm::InputTag("packedPFCandidates"));
+  desc.add<edm::InputTag>("candToGenParticleMap", edm::InputTag("TrackToGenParticleMapProducer"));
+
+  // Configuration parameters
+  desc.add<bool>("isMC", true);
+  desc.add<bool>("writeConstits", false);
+  desc.add<bool>("doLateKt", false);
+  desc.add<bool>("chargedOnly", false);
+  
+  desc.add<double>("zcut", 0.1);
+  desc.add<double>("beta", 0.0);
+  desc.add<double>("dynktcut", 1.0);
+  desc.add<double>("ktcut", 1.0);
+  desc.add<double>("rParam", 0.4);
+  desc.add<double>("ptCut", 1.);
+  desc.add<double>("trkInefRate", 0.); // between 0 and 1
+
+  desc.add<bool>("doGenJets", false);
+
+  desc.add<bool>("aggregateHF", false);
+  desc.add<bool>("aggregateWithTruthInfo", true);
+  desc.add<bool>("aggregateWithCuts", false);
+  desc.add<bool>("aggregateWithXGB", false);
+  desc.add<bool>("aggregateWithTMVA", false);
+  // desc.add<edm::FileInPath>("xgb_path", edm::FileInPath("RecoHI/HiJetAlgos/data/dummy.model"));
+  // desc.add<edm::FileInPath>("tmva_path", edm::FileInPath("RecoHI/HiJetAlgos/data/dummy.weights.xml"));
+  desc.add<std::vector<std::string>>("tmva_variables", {});
+  desc.add<std::vector<std::string>>("tmva_spectators", {});
+  // Tag info labels
+  desc.add<std::string>("ipTagInfoLabel", "pfImpactParameter");
+  desc.add<std::string>("svTagInfoLabel", "pfInclusiveSecondaryVertexFinder");
+
+  descriptions.add("aggregatedPFCands", desc);
 }
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -529,6 +564,8 @@ aggregatedPFCollection::beginJob() {
 void
 aggregatedPFCollection::endJob() {
 }
+ 
+using aggregatedPFCands = aggregatedPFCollection;
 
 // define this as a plug-in
-DEFINE_FWK_MODULE(aggregatedPFCollection);
+DEFINE_FWK_MODULE(aggregatedPFCands);
