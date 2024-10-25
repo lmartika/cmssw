@@ -264,6 +264,7 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
             process.akCs2PFpatJetCorrFactors.levels = ['L2Relative', 'L3Absolute'] 
  
             process.akCs2PFJets.src = 'aggregatedPFCands'
+            process.ak2GenJetsNoNu.src = 'aggregatedGenLevel' 
 
             process.akCs2PFJetAnalyzer = process.akCs4PFJetAnalyzer.clone(jetTag = "akCs2PFpatJets", jetName = 'akCs2PF', genjetTag = "ak2GenJetsNoNu")      
             process.akCs2PFJetAnalyzer.jetPtMin = cms.double(70.0)
