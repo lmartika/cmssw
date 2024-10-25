@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 
 aggregatedPFCands = cms.EDProducer('aggregatedPFCands',
-#                                    jetSrc = cms.InputTag('slimmedJets'),
+                                    jetSrc = cms.InputTag('updatedPatJets'),
                                     constitSrc = cms.InputTag('packedPFCandidates'),
                                     candToGenParticleMap = cms.InputTag("TrackToGenParticleMapProducer", "trackToGenParticleMap"),
                                     isMC = cms.bool(True),
@@ -12,7 +12,6 @@ aggregatedPFCands = cms.EDProducer('aggregatedPFCands',
                                     aggregateHF = cms.bool(True),
                                     aggregateWithTruthInfo = cms.bool(True),
                                     aggregateWithCuts = cms.bool(False),
-                                    aggregateWithXGB = cms.bool(False),
                                     aggregateWithTMVA = cms.bool(False),
                                     ipTagInfoLabel = cms.string("pfImpactParameter"),
                                     svTagInfoLabel = cms.string("pfInclusiveSecondaryVertexFinder"),

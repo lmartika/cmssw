@@ -676,7 +676,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 
     // std::cout << "New jet with nref " << jets_.nref << std::endl;
     // std::cout << svTagInfos_ << std::endl;
-    // std::cout << "start of svtx" << std::endl;
+    std::cout << "start of svtx" << std::endl;
     if (doSvtx_ && jet.hasTagInfo(svTagInfoLabel_.c_str())) {
       const reco::CandSecondaryVertexTagInfo *svTagInfo = jet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
       int nsv = svTagInfo->nVertices();

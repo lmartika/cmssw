@@ -41,6 +41,7 @@ ak4PFJets = ak4PFJets.clone(jetPtMin = 1.0, rParam = 0.4, src = 'packedPFCandida
 unsubJets = cms.EDProducer("JetMatcherDR",
     matched = cms.InputTag("ak4PFJets"),
     source = cms.InputTag("updatedPatJets")
+#    source = cms.InputTag("akCs2PFpatJets")
 )
 
 candidateBtagging = cms.Sequence(

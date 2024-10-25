@@ -26,7 +26,7 @@ pfDeepCSVTagInfos.svTagInfos = "pfSecondaryVertexTagInfos"
 from RecoBTag.ONNXRuntime.pfParticleNetAK4_cff import pfParticleNetAK4TagInfos, pfParticleNetAK4JetTags
 from RecoBTag.ONNXRuntime.pfParticleNetAK4DiscriminatorsJetTags_cfi import pfParticleNetAK4DiscriminatorsJetTags
 #pfParticleNetAK4TagInfos.jets = "updatedPatJets"
-pfParticleNetAK4TagInfos.jets = "akCs2PFpatJets"
+pfParticleNetAK4TagInfos.jets = "ak2PFpatJets"
 pfParticleNetAK4TagInfos.unsubjet_map = "unsubJets"
 pfParticleNetAK4TagInfos.use_puppiP4 = False
 pfParticleNetAK4TagInfos.pf_candidates = "packedPFCandidates"
@@ -42,7 +42,7 @@ ak4PFJets = ak4PFJets.clone(jetPtMin = 1.0, rParam = 0.4, src = 'packedPFCandida
 unsubJets = cms.EDProducer("JetMatcherDR",
     matched = cms.InputTag("ak4PFJets"),
 #    source = cms.InputTag("updatedPatJets")
-    source = cms.InputTag("akCs2PFpatJets")
+    source = cms.InputTag("ak2PFpatJets")
 )
 
 candidateBtagging = cms.Sequence(

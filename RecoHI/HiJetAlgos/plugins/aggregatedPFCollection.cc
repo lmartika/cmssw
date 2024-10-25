@@ -6,6 +6,7 @@
   If I was a better programmer, I would just call that class
 
   -Matt Nguyen, 02-02-2022 (Groundhog's day) 
+  - Jelena - modified to give reduced PFCandidateCollection as output (b-jet constituents only)
 
 */
 
@@ -54,13 +55,10 @@
 #include "HeavyIonsAnalysis/JetAnalysis/interface/HiInclusiveJetAnalyzer.h"
 
 //template <class T>
-
 class aggregatedPFCollection : public edm::EDProducer {
 public:
     explicit aggregatedPFCollection(const edm::ParameterSet&);
     ~aggregatedPFCollection();
-
-   static void fillDescriptions(edm::ConfigurationDescriptions &descriptions);
 
 private:
     virtual void beginJob() ;
@@ -89,7 +87,6 @@ private:
     bool aggregateHF_;
     bool withTruthInfo_;
     bool withCuts_;
-    bool withXGB_;
     bool withTMVA_;
 
     edm::FileInPath tmva_path_;
@@ -114,11 +111,7 @@ aggregatedPFCollection::aggregatedPFCollection(const edm::ParameterSet& iConfig)
     if (aggregateHF_) {
         withTruthInfo_ = iConfig.getParameter<bool>("aggregateWithTruthInfo");
         withCuts_ = iConfig.getParameter<bool>("aggregateWithCuts");
-        withXGB_ = iConfig.getParameter<bool>("aggregateWithXGB");
         withTMVA_ = iConfig.getParameter<bool>("aggregateWithTMVA");
-        if (withXGB_) {
-            //xgb_path_ = iConfig.getParameter<edm::FileInPath>("xgb_path");
-        }
 
         if (withTMVA_) {
             tmva_path_ = iConfig.getParameter<edm::FileInPath>("tmva_path");
@@ -139,6 +132,7 @@ aggregatedPFCollection::aggregatedPFCollection(const edm::ParameterSet& iConfig)
 
     if (aggregateHF_ && isMC_) candToGenParticleMapToken_ = consumes<reco::TrackToGenParticleMap>(iConfig.getParameter<edm::InputTag>("candToGenParticleMap"));
 
+    // Initialize objects 
     if (aggregateHF_ && withTMVA_) {
         tmvaTagger = std::make_unique<TMVAEvaluator>();
         tmvaTagger->initialize("Color:Silent:Error",
@@ -151,7 +145,8 @@ aggregatedPFCollection::aggregatedPFCollection(const edm::ParameterSet& iConfig)
     }
 
     produces<reco::PFCandidateCollection>();
-
+//    produces<reco::PFCandidateCollection>("newPFCollectionHFgen");
+//    produces<reco::PFCandidateCollection>("newPFCollectionHFreco");
 
 }
 
@@ -167,17 +162,13 @@ aggregatedPFCollection::~aggregatedPFCollection()
 
 void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& iSetup){
 
+
     auto newPFCandCollection = std::make_unique<reco::PFCandidateCollection>();
+
+    auto newPFCandCollectionHF = std::make_unique<reco::PFCandidateCollection>();
 
     edm::Handle<pat::JetCollection> jets;
     iEvent.getByToken(jetSrc_, jets);    
-
-
-    //    edm::Handle<std::vector<reco::PFCandidate>> pfcands;
-    // bool isPF = iEvent.getByToken(constitSrc_, pfcands);
-
-    // edm::Handle<edm::View<pat::PackedCandidate>> pfcandsPacked;
-    // bool isPackedPF = iEvent.getByToken(packedConstitSrc_, pfcandsPacked);
 
     // -- For aggregation -- //
     edm::Handle<reco::TrackToGenParticleMap> candToGenParticleMap;
@@ -196,82 +187,109 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
         const pat::Jet& jet = (*jets)[j];
 
         if (aggregateHF_) {
-      
+     
             if (doGenJets_ && isMC_) {
 
                 // std::cout << "------->Aggregating HF for gen jet" << std::endl;               
                 reco::PFCandidate outputPseudoHF;
+                std::vector<reco::PFCandidate> constituentsNoHF;
+
 
                 const reco::GenJet *genJet = jet.genJet();
 
                 // Particle collection to aggregate into pseudo-Bs
-                std::vector<edm::Ptr<reco::Candidate>> inputJetConstituents = genJet->getJetConstituents();
+                //std::vector<edm::Ptr<reco::Candidate>> inputJetConstituents = genJet->getJetConstituents();
                 std::map<int, std::vector<edm::Ptr<reco::Candidate>>> hfConstituentsMap;
                 reco::Candidate::PolarLorentzVector totalPseudoHF(0., 0., 0., 0.);
 
+
+                //int HFjet = 0;
                 // Go over gen particles
-                for (edm::Ptr<reco::Candidate> constit : inputJetConstituents) {            
-                    if(chargedOnly_ && constit->charge() == 0) continue;
-                    if(constit->pt() < ptCut_) continue;
 
-                    bool isNeutrino = (constit->pdgId() == 12); // nue
-                    isNeutrino &= (constit->pdgId() == 14); // numu
-                    isNeutrino &= (constit->pdgId() == 16); // nutau
-                    isNeutrino &= (constit->pdgId() == 18); // nutau'
-                    if (isNeutrino) {
-                        std::cout << "found a neutrino" << std::endl;
-                        continue;
-                    }
+                if (genJet) {
 
-                    // Get status of matched gen particle
-                    edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
-                    int status = matchGenParticle->status();
 
-                    // Add particle to output collection or from HF map
-                    if (status == 1) {
-                        //add for PF candidate collection output
-                        reco::PFCandidate constituentsPF;
-                        constituentsPF.setCharge(constit->charge());
-                        constituentsPF.setP4(constit->p4());
-                        constituentsPF.setPdgId(constit->pdgId());
-                        newPFCandCollection->push_back(constituentsPF);
-                    } 
-                    else if (status >= 100) {
-                        hfConstituentsMap[status].push_back(constit);
-                    }
+                    for (const edm::Ptr<reco::Candidate> constit : (*genJet).getJetConstituents()) {
 
-                } // end constit loop 
+                        if(chargedOnly_ && constit->charge() == 0) continue;
+                        if(constit->pt() < ptCut_) continue;
 
-                // Aggregate particles coming from HF decays into pseudo-B/D's and add them to the collection
-                for (auto it = hfConstituentsMap.begin(); it != hfConstituentsMap.end(); ++it) {
-                    reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
-                    for (edm::Ptr<reco::Candidate> hfConstituent : it->second) {
-                        reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
-                        productLorentzVector.SetPt(hfConstituent->pt());
-                        productLorentzVector.SetEta(hfConstituent->eta());
-                        productLorentzVector.SetPhi(hfConstituent->phi());
-                        productLorentzVector.SetM(hfConstituent->mass());
-                        pseudoHF += productLorentzVector;
-                        totalPseudoHF += productLorentzVector;                           
-                        reco::PFCandidate daughter;
-                        daughter.setP4(productLorentzVector);
-                        outputPseudoHF.addDaughter(daughter);
-                    }
-                } // end map loop
+                        bool isNeutrino = (constit->pdgId() == 12); // nue
+                        isNeutrino &= (constit->pdgId() == 14); // numu
+                        isNeutrino &= (constit->pdgId() == 16); // nutau
+                        isNeutrino &= (constit->pdgId() == 18); // nutau'
+                        if (isNeutrino) {
+                            std::cout << "found a neutrino" << std::endl;
+                            continue;
+                        }
+
+                        // Get status of matched gen particle
+
+                        edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
+                        int status = matchGenParticle->status();
+
+
+                        // Add particle to output collection or from HF map
+                        if (status >= 100) {
+                            hfConstituentsMap[status].push_back(constit);
+                        }
+
+                        else if (status == 1) {
+                            //add for PF candidate collection output
+                            reco::PFCandidate constituentsPF;
+                            constituentsPF.setCharge(constit->charge());
+                            constituentsPF.setP4(constit->p4());
+                            constituentsPF.setPdgId(constit->pdgId());
+                            constituentsNoHF.push_back(constituentsPF);
+                            newPFCandCollection->push_back(constituentsPF);
+
+                        } 
+
+                    } // end constit loop 
+
+
+
+                    // Aggregate particles coming from HF decays into pseudo-B/D's and add them to the collection
+                    for (auto it = hfConstituentsMap.begin(); it != hfConstituentsMap.end(); ++it) {
+                        reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
+                        for (edm::Ptr<reco::Candidate> hfConstituent : it->second) {
+                            reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
+                            productLorentzVector.SetPt(hfConstituent->pt());
+                            productLorentzVector.SetEta(hfConstituent->eta());
+                            productLorentzVector.SetPhi(hfConstituent->phi());
+                            productLorentzVector.SetM(hfConstituent->mass());
+                            pseudoHF += productLorentzVector;
+                            totalPseudoHF += productLorentzVector;                           
+                            reco::PFCandidate daughter;
+                            daughter.setP4(productLorentzVector);
+                            outputPseudoHF.addDaughter(daughter);
+                        }
+                    } // end map loop
                     
-                outputPseudoHF.setP4(totalPseudoHF);
-                newPFCandCollection->push_back(outputPseudoHF);
+                    outputPseudoHF.setP4(totalPseudoHF);
+
+
+                    if (hfConstituentsMap.size() > 0){
+                        newPFCandCollection->push_back(outputPseudoHF);
+                        newPFCandCollectionHF->insert(newPFCandCollectionHF->end(), constituentsNoHF.begin(), constituentsNoHF.end());
+                        newPFCandCollectionHF->push_back(outputPseudoHF);
+
+                    }
+    
+                }
+
             }
                 
             else {
 
-		std::cout << "------->Aggregating HF for reco jet" << std::endl; 
+		        // std::cout << "------->Aggregating HF for reco jet" << std::endl; 
 
                 reco::TrackToGenParticleMap recoMap = isMC_ ? *candToGenParticleMap : reco::TrackToGenParticleMap();	        
 
                 std::vector<edm::Ptr<reco::Candidate>> inputJetConstituents = jet.getJetConstituents();
                 std::vector<reco::PFCandidate> droppedTracks = {};
                 reco::PFCandidate outputPseudoHF;
+                std::vector<reco::PFCandidate> constituentsNoHF;
 
 
                 // Particle collection to aggregate into pseudo-Bs
@@ -292,20 +310,18 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                     // Look for particle in ipTracks
                     //auto itIPTrack = std::find(ipTracks.begin(), ipTracks.end(), constit);
                     //if (itIPTrack == ipTracks.end()) continue;
-		    
-		    reco::CandidatePtr itIPTrack;
-		    int trkIPIndex = -1;
-		    for (auto iterIPTrack : ipTracks) {
-		      float eps = 1e-5;                                                                                                                                
-		      trkIPIndex++;
-		        
-		      if (std::abs(constit->eta()-iterIPTrack->eta())>eps) continue;
-		      else if (std::abs(constit->phi()-iterIPTrack->phi())>eps) continue;
-		      else if (std::abs(constit->pt()-iterIPTrack->pt())>eps) continue;
-		      itIPTrack = iterIPTrack;
-		    }
 
-		    if (!(itIPTrack)) continue; 
+                    reco::CandidatePtr itIPTrack;
+                    int trkIPIndex = -1;
+                    for (auto iterIPTrack : ipTracks) {
+                        float eps = 1e-5;                                                                                    trkIPIndex++;
+                        if (std::abs(constit->eta()-iterIPTrack->eta())>eps) continue;
+                        else if (std::abs(constit->phi()-iterIPTrack->phi())>eps) continue;
+                        else if (std::abs(constit->pt()-iterIPTrack->pt())>eps) continue;
+                        itIPTrack = iterIPTrack;
+                    }
+
+                    if (!(itIPTrack)) continue; 
 
                     // For track inefficiency uncertainty 
                     const double range_from = 0;
@@ -329,6 +345,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                         if (recoMap.find(constit) != recoMap.end()) {
                             edm::Ptr<pat::PackedGenParticle> matchGenParticle = recoMap.at(constit);
                             status = matchGenParticle->status();
+			    //                            std::cout << " status = " << status << std::endl;
                         }
                     }
                     else {
@@ -352,12 +369,13 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                         float jtpt = jet.pt();
                         
                         // Get IP info 
+                        //int trkIPIndex = itIPTrack - ipTracks.begin();
                         const reco::btag::TrackIPData trkIPdata = ipData[trkIPIndex];
                         ip3dSig = trkIPdata.ip3d.significance();
                         ip2dSig = trkIPdata.ip2d.significance();
                         distanceToJetAxis = trkIPdata.distanceToJetAxis.value();
-			//                         int pdg = constit->pdgId();
-			//                        isLepton = (std::abs(pdg) == 11) || (std::abs(pdg) == 13);
+			//                        int pdg = constit->pdgId();
+                        // isLepton = (std::abs(pdg) == 11) || (std::abs(pdg) == 13);
 
                         // if nan go back to missing_value
                         if (ip3dSig != ip3dSig) ip3dSig = missing_value;
@@ -368,21 +386,18 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
             
                         for (uint ivtx = 0; ivtx < svTagInfo->nVertices(); ivtx++) {
                             std::vector<edm::Ptr<reco::Candidate>> isvTracks = svTagInfo->vertexTracks(ivtx);
-                            // auto itSVTrack = std::find(isvTracks.begin(), isvTracks.end(), constit);
-                            // if (itSVTrack == isvTracks.end()) continue;
-			    
-			    reco::CandidatePtr itSVTrack;
-			    for (auto iterSVTrack : isvTracks) {
-			      float eps = 1e-5;
+                            //auto itSVTrack = std::find(isvTracks.begin(), isvTracks.end(), constit);
+                            //if (itSVTrack == isvTracks.end()) continue;
+                            reco::CandidatePtr itSVTrack;
+                            for (auto iterSVTrack : isvTracks) {
+                                float eps = 1e-5;
+                                if (std::abs(constit->eta()-iterSVTrack->eta())>eps) continue;
+                                else if (std::abs(constit->phi()-iterSVTrack->phi())>eps) continue;
+                                else if (std::abs(constit->pt()-iterSVTrack->pt())>eps) continue;
+                                itSVTrack = iterSVTrack;
+                            }
 
-			      if (std::abs(constit->eta()-iterSVTrack->eta())>eps) continue;
-			      else if (std::abs(constit->phi()-iterSVTrack->phi())>eps) continue;
-                              else if (std::abs(constit->pt()-iterSVTrack->pt())>eps) continue;
-
-			      itSVTrack = iterSVTrack;
-			    }
-
-			    if (!(itSVTrack)) continue; 
+                            if (!(itSVTrack)) continue; 
 
                             inSV = true;
 
@@ -417,7 +432,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                             }
                         }
 
-			else if (withTMVA_) {
+                        else if (withTMVA_) {
                             std::map<std::string, float> inputs;
                             inputs["trkIp3dSig"] = ip3dSig;
                             inputs["trkIp2dSig"] = ip2dSig;
@@ -451,6 +466,8 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                         constituentsPF.setCharge(constit->charge());
                         constituentsPF.setP4(constit->p4());
                         constituentsPF.setPdgId(constit->pdgId());
+
+                        constituentsNoHF.push_back(constituentsPF);
                         newPFCandCollection->push_back(constituentsPF);
                     }
                     else if (status >= 100) {
@@ -458,10 +475,9 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                     }
     
                 } // end jet constituents loop
-    
+   
                 // Aggregate particles coming from HF decays into pseudo-B/C's  and add them to the collection
                 for (auto itTrackFromHF = hfConstituentsMap.begin(); itTrackFromHF != hfConstituentsMap.end(); itTrackFromHF++) {
-		  std::cout << "In aggregation loop" << std::endl;
                     reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
                     for (edm::Ptr<reco::Candidate> hfConstituent : itTrackFromHF->second) {
                         reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
@@ -480,13 +496,20 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                 } // end tracks from B loop
 
                 outputPseudoHF.setP4(totalPseudoHF);
-                newPFCandCollection->push_back(outputPseudoHF);
+
+                if (hfConstituentsMap.size() > 0){
+                    newPFCandCollection->push_back(outputPseudoHF);
+                    newPFCandCollectionHF->insert(newPFCandCollectionHF->end(), constituentsNoHF.begin(), constituentsNoHF.end());
+                    newPFCandCollectionHF->push_back(outputPseudoHF);
+
+                }
 
             } 
-        }
 
+        }
+	// This part is directly from the pp analysis
         else {
-            std::cout << "\tNot aggregating" << std::endl;
+            // std::cout << "\tNot aggregating" << std::endl;
             std::vector<edm::Ptr<reco::Candidate>> constituents = {}; 
             if (doGenJets_ && isMC_) {
                 const reco::GenJet *genJet = jet.genJet();
@@ -494,65 +517,19 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
             } 
             else {
                 constituents = jet.getJetConstituents();
-		std::cout << "try jet pt " << jet.pt() << " " << std::endl;
             }
 
-	    for (edm::Ptr<reco::Candidate> constituent : constituents) {
-	      //std::cout << "Test const " << constituent->pt() << std::endl;
-	      if ((chargedOnly_) && (constituent->charge() == 0)) continue;
-	      if (constituent->pt() < ptCut_) continue;
-	      jetConstituents.push_back(fastjet::PseudoJet(constituent->px(), constituent->py(), constituent->pz(), constituent->energy()));
-		}  
+            for (edm::Ptr<reco::Candidate> constituent : constituents) {
+                if ((chargedOnly_) && (constituent->charge() == 0)) continue;
+                if (constituent->pt() < ptCut_) continue;
+                jetConstituents.push_back(fastjet::PseudoJet(constituent->px(), constituent->py(), constituent->pz(), constituent->energy()));
+            }
         }
 
     } // end jet loop
-    
-    iEvent.put(std::move(newPFCandCollection));
-  
-}
 
-
-//template <class T>
-void aggregatedPFCollection::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  edm::ParameterSetDescription desc;
-  desc.setComment("New PF Collection");
-
-  // Input collections
-  //   desc.add<edm::InputTag>("jetSrc", edm::InputTag("slimmedJets"));
-  desc.add<edm::InputTag>("jetSrc", edm::InputTag("updatedPatJets"));
-  desc.add<edm::InputTag>("constitSrc", edm::InputTag("packedPFCandidates"));
-  desc.add<edm::InputTag>("candToGenParticleMap", edm::InputTag("TrackToGenParticleMapProducer"));
-
-  // Configuration parameters
-  desc.add<bool>("isMC", true);
-  desc.add<bool>("writeConstits", false);
-  desc.add<bool>("doLateKt", false);
-  desc.add<bool>("chargedOnly", false);
-  
-  desc.add<double>("zcut", 0.1);
-  desc.add<double>("beta", 0.0);
-  desc.add<double>("dynktcut", 1.0);
-  desc.add<double>("ktcut", 1.0);
-  desc.add<double>("rParam", 0.4);
-  desc.add<double>("ptCut", 1.);
-  desc.add<double>("trkInefRate", 0.); // between 0 and 1
-
-  desc.add<bool>("doGenJets", false);
-
-  desc.add<bool>("aggregateHF", false);
-  desc.add<bool>("aggregateWithTruthInfo", true);
-  desc.add<bool>("aggregateWithCuts", false);
-  desc.add<bool>("aggregateWithXGB", false);
-  desc.add<bool>("aggregateWithTMVA", false);
-  // desc.add<edm::FileInPath>("xgb_path", edm::FileInPath("RecoHI/HiJetAlgos/data/dummy.model"));
-  // desc.add<edm::FileInPath>("tmva_path", edm::FileInPath("RecoHI/HiJetAlgos/data/dummy.weights.xml"));
-  desc.add<std::vector<std::string>>("tmva_variables", {});
-  desc.add<std::vector<std::string>>("tmva_spectators", {});
-  // Tag info labels
-  desc.add<std::string>("ipTagInfoLabel", "pfImpactParameter");
-  desc.add<std::string>("svTagInfoLabel", "pfInclusiveSecondaryVertexFinder");
-
-  descriptions.add("aggregatedPFCands", desc);
+    iEvent.put(std::move(newPFCandCollectionHF));
+ 
 }
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -564,8 +541,8 @@ aggregatedPFCollection::beginJob() {
 void
 aggregatedPFCollection::endJob() {
 }
- 
-using aggregatedPFCands = aggregatedPFCollection;
 
-// define this as a plug-in
+using aggregatedPFCands = aggregatedPFCollection;
+// define this as a plug-ina
 DEFINE_FWK_MODULE(aggregatedPFCands);
+//DEFINE_FWK_MODULE(aggregatedPFCollection);
