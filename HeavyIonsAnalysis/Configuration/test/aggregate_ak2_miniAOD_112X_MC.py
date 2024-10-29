@@ -237,7 +237,7 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
 # TODO: just update the analyzer created in the beginning if not aggregating? but if we do not aggregate, we want just inclusive CS jets? so maybe a different producer config?
 # TODO: add matching between jet collections to get b tag
     if runAggregation:
-            process.load("RecoHI.HiJetAlgos.aggregatedPFCands_cfi")
+            process.load("RecoHI.HiJetAlgos.aggregatedPFCollection_cfi")
             process.aggregatedPFCands.aggregateHF = True
             process.aggregatedPFCands.jetSrc = "updatedPatJets"
             process.aggregatedPFCands.constitSrc = "packedPFCandidates"
