@@ -11,7 +11,7 @@ from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
 
 
 def get_radius(tag):
-    return int(filter(str.isdigit, tag))
+    return int("".join(filter(str.isdigit, tag)))
 
 def addToSequence(label, module, process, sequence):
     setattr(process, label, module)
@@ -70,26 +70,26 @@ def setupHeavyIonJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'
                        patJetPartons.clone(partonMode = 'Pythia8'),
                        process, sequence)
 
-    addToSequence( tag+'pfImpactParameterTagInfos',
-                   pfImpactParameterTagInfos.clone(jets = tag +'Jets',
-                      candidates = 'packedPFCandidates', primaryVertex = 'offlineSlimmedPrimaryVerticesRecovery'),
-                   process, sequence)
+    #addToSequence( tag+'pfImpactParameterTagInfos',
+    #               pfImpactParameterTagInfos.clone(jets = tag +'Jets',
+    #                  candidates = 'packedPFCandidates', primaryVertex = 'offlineSlimmedPrimaryVerticesRecovery'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfSecondaryVertexTagInfos',
-                   pfSecondaryVertexTagInfos.clone(trackIPTagInfos = tag+'pfImpactParameterTagInfos'),
-                   process, sequence)
+    #addToSequence( tag+'pfSecondaryVertexTagInfos',
+    #               pfSecondaryVertexTagInfos.clone(trackIPTagInfos = tag+'pfImpactParameterTagInfos'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfDeepCSVTagInfos',
-                   pfDeepCSVTagInfos.clone(svTagInfos = tag+'pfSecondaryVertexTagInfos'),
-                   process, sequence)
+    #addToSequence( tag+'pfDeepCSVTagInfos',
+    #               pfDeepCSVTagInfos.clone(svTagInfos = tag+'pfSecondaryVertexTagInfos'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfDeepCSVJetTags',
-                   pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
-                   process, sequence)
+    #addToSequence( tag+'pfDeepCSVJetTags',
+    #               pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfJetProbabilityBJetTags',
-                   pfJetProbabilityBJetTags.clone(tagInfos = [tag+'pfImpactParameterTagInfos']),
-                   process, sequence)
+    #addToSequence( tag+'pfJetProbabilityBJetTags',
+    #               pfJetProbabilityBJetTags.clone(tagInfos = [tag+'pfImpactParameterTagInfos']),
+    #               process, sequence)
 
     addToSequence( tag+'patJets',
                    patJets.clone(
@@ -158,27 +158,27 @@ def setupHeavyIonJetsPF(tag, sequence, process, isMC, radius = -1, JECTag = 'Non
                        patJetPartons.clone(partonMode = 'Pythia8'),
                        process, sequence)
 
-    addToSequence( tag+'pfImpactParameterTagInfos',
-                   pfImpactParameterTagInfos.clone(jets = tag +'Jets',
-                      candidates = 'packedPFCandidates', primaryVertex = 'offlineSlimmedPrimaryVerticesRecovery'),
-                   process, sequence)
+    #addToSequence( tag+'pfImpactParameterTagInfos',
+    #               pfImpactParameterTagInfos.clone(jets = tag +'Jets',
+    #                  candidates = 'packedPFCandidates', primaryVertex = 'offlineSlimmedPrimaryVerticesRecovery'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfSecondaryVertexTagInfos',
-                   pfSecondaryVertexTagInfos.clone(trackIPTagInfos = tag+'pfImpactParameterTagInfos'),
-                   process, sequence)
+    #addToSequence( tag+'pfSecondaryVertexTagInfos',
+    #               pfSecondaryVertexTagInfos.clone(trackIPTagInfos = tag+'pfImpactParameterTagInfos'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfDeepCSVTagInfos',
-                   pfDeepCSVTagInfos.clone(svTagInfos = tag+'pfSecondaryVertexTagInfos'),
-                   process, sequence)
+    #addToSequence( tag+'pfDeepCSVTagInfos',
+    #               pfDeepCSVTagInfos.clone(svTagInfos = tag+'pfSecondaryVertexTagInfos'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfDeepCSVJetTags',
-                   pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
-                   process, sequence)
+    #addToSequence( tag+'pfDeepCSVJetTags',
+    #               pfDeepCSVJetTags.clone(src = tag+'pfDeepCSVTagInfos'),
+    #               process, sequence)
 
-    addToSequence( tag+'pfJetProbabilityBJetTags',
-                   pfJetProbabilityBJetTags.clone(tagInfos = [tag+'pfImpactParameterTagInfos']),
-                   process, sequence)
-
+    #addToSequence( tag+'pfJetProbabilityBJetTags',
+    #               pfJetProbabilityBJetTags.clone(tagInfos = [tag+'pfImpactParameterTagInfos']),
+    #               process, sequence)
+    
     addToSequence( tag+'patJets',
                    patJets.clone(
                        JetFlavourInfoSource = tag+'patJetFlavourAssociation',
