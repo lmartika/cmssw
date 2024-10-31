@@ -26,7 +26,8 @@ process.HiForestInfo.info = cms.vstring("HiForest, miniAOD, 112X, mc")
 process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     fileNames = cms.untracked.vstring(
-        'file:/eos/user/l/lamartik/testsamples/pbpbbjet2018/043213d2-944a-4e18-b1b5-ef71e93ef850.root'
+        #'file:/eos/user/l/lamartik/testsamples/pbpbbjet2018/043213d2-944a-4e18-b1b5-ef71e93ef850.root'
+        "/store/group/phys_heavyions/lamartik/bjet/043213d2-944a-4e18-b1b5-ef71e93ef850.root"
     ),
 )
 
@@ -144,7 +145,8 @@ if addR2Jets :
     setupHeavyIonJetsPF('ak2PF', process.jetsR2, process, isMC = 1, radius = 0.20, JECTag = 'AK2PF')
 #        process.ak2PFpatJetCorrFactors.levels = ['L2Relative', 'L3Absolute']   # if JECs wanted
     process.ak2PFpatJetCorrFactors.levels =  cms.vstring()
-
+    process.ak2PFpatJets.addBTagInfo = False
+    process.ak2PFpatJets.addDiscriminators = False
     process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAODuncorrjet_cff")
     process.ak2PFJetAnalyzer = process.akCs4PFJetAnalyzer.clone(jetTag = "ak2PFpatJets", jetName = 'ak2PF', genjetTag = "ak2GenJetsNoNuPF")      
     process.forest += process.jetsR2 * process.ak2PFJetAnalyzer
@@ -262,7 +264,8 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
             from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupHeavyIonJets
             setupHeavyIonJets('akCs2PF', process.aggregatedJets, process, isMC = 1, radius = 0.20, JECTag = 'AK2PF')
             process.akCs2PFpatJetCorrFactors.levels = ['L2Relative', 'L3Absolute'] 
- 
+            process.akCs2PFpatJets.addBTagInfo = False
+            process.akCs2PFpatJets.addDiscriminators = False
             process.akCs2PFJets.src = 'aggregatedPFCands'
             process.ak2GenJetsNoNu.src = 'aggregatedGenLevel' 
 
