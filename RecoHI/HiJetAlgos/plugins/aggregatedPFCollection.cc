@@ -496,7 +496,7 @@ void aggregatedPFCollection::produce(edm::Event& iEvent, const edm::EventSetup& 
                 } // end tracks from B loop
 
                 outputPseudoHF.setP4(totalPseudoHF);
-
+                outputPseudoHF.setMass(totalPseudoHF.mass()*-1);
                 if (hfConstituentsMap.size() > 0){
                     newPFCandCollection->push_back(outputPseudoHF);
                     newPFCandCollectionHF->insert(newPFCandCollectionHF->end(), constituentsNoHF.begin(), constituentsNoHF.end());
