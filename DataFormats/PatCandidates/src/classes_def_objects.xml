@@ -436,7 +436,8 @@
    </ioread>
 
 
-  <class name="pat::PackedGenParticle" ClassVersion="12">
+  <class name="pat::PackedGenParticle" ClassVersion="13">
+    <version ClassVersion="13" checksum="508245411"/>
     <version ClassVersion="12" checksum="2626711017"/>
     <version ClassVersion="11" checksum="25552245"/>
     <version ClassVersion="10" checksum="389883266"/>
