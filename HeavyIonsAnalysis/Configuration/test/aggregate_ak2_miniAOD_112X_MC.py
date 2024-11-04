@@ -109,9 +109,28 @@ process.genJetSequence = cms.Sequence()
 
 ###############################################################################
 
+process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
+
+process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAODuncorrjet_cff")
+
+from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 
 
-###############################################################################
+updateJetCollection(
+    process,
+    jetSource = cms.InputTag('ak2PFpatJets'),
+    jetCorrections = ('AK2PF', cms.vstring(), 'None'),
+    btagDiscriminators = ['pfCombinedSecondaryVertexV2BJetTags', 'pfDeepCSVDiscriminatorsJetTags:BvsAll', 'pfDeepCSVDiscriminatorsJetTags:CvsB', 'pfDeepCSVDiscriminatorsJetTags:CvsL'], ## to add discriminators,
+    btagPrefix = 'TEST',
+)
+process.updatedPatJets.addJetCorrFactors = False
+process.updatedPatJets.addTagInfos = True
+process.updatedPatJets.tagInfoSources = ["pfImpactParameterTagInfos", "pfInclusiveSecondaryVertexFinderTagInfos"]
+process.updatedPatJets.discriminatorSources =  ['pfParticleNetAK4JetTags:probb', 'pfParticleNetAK4JetTags:probb', 'pfParticleNetAK4JetTags:probbb', 'pfParticleNetAK4JetTags:probc', 'pfParticleNetAK4JetTags:probcc','pfParticleNetAK4JetTags:probpu','pfParticleNetAK4JetTags:probg','pfParticleNetAK4JetTags:probuds','pfParticleNetAK4JetTags:probundef','pfParticleNetAK4DiscriminatorsJetTags:BvsAll','pfParticleNetAK4DiscriminatorsJetTags:CvsL','pfParticleNetAK4DiscriminatorsJetTags:QvsG','pfParticleNetAK4DiscriminatorsJetTags:CvsB']
+
+
+
+
 # main forest sequence
 process.forest = cms.Path(
     process.HiForestInfo +
@@ -122,87 +141,21 @@ process.forest = cms.Path(
 #    process.particleFlowAnalyser +
     process.hiEvtAnalyzer+
 #    process.HiGenParticleAna + 
-    process.genJetSequence
-    )
+    process.genJetSequence+
+    process.extraJetsMC+
+    process.unsubCandidateBtagging+
+    process.updatedPatJets
+)
 
-addR2Jets = True
 
-addCandidateTagging = True
+
 doTracks = True
 doSvtx = True
 
 doGenAnalysis = True
 runAggregation = True
 
-if addR2Jets :
-    process.load("HeavyIonsAnalysis.JetAnalysis.extraJets_cff")
-    process.load("RecoHI.HiJetAlgos.EventConstSub_cfi")
-    process.forest += process.extraJetsMC
 
-    from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupHeavyIonJetsPF
-
-    process.jetsR2 = cms.Sequence()
-    setupHeavyIonJetsPF('ak2PF', process.jetsR2, process, isMC = 1, radius = 0.20, JECTag = 'AK2PF')
-#        process.ak2PFpatJetCorrFactors.levels = ['L2Relative', 'L3Absolute']   # if JECs wanted
-    process.ak2PFpatJetCorrFactors.levels =  cms.vstring()
-    process.ak2PFpatJets.addBTagInfo = False
-    process.ak2PFpatJets.addDiscriminators = False
-    process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAODuncorrjet_cff")
-    process.ak2PFJetAnalyzer = process.akCs4PFJetAnalyzer.clone(jetTag = "ak2PFpatJets", jetName = 'ak2PF', genjetTag = "ak2GenJetsNoNuPF")      
-    process.forest += process.jetsR2 * process.ak2PFJetAnalyzer
-    process.ak2PFJetAnalyzer.jetPtMin = cms.double(70.0)
-
-
-from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
-
-ipTagInfoLabel_ = "pfImpactParameter"
-svTagInfoLabel_ = "pfInclusiveSecondaryVertexFinder"
-
-if addCandidateTagging:
-    process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAODuncorrjet_cff")
-
-    updateJetCollection(
-        process,
-        jetSource = cms.InputTag('slimmedJets'),
-        jetCorrections = ('AK2PF', cms.vstring(), 'None'),
-        btagDiscriminators = ['pfCombinedSecondaryVertexV2BJetTags', 'pfDeepCSVDiscriminatorsJetTags:BvsAll', 'pfDeepCSVDiscriminatorsJetTags:CvsB', 'pfDeepCSVDiscriminatorsJetTags:CvsL'], ## to add discriminators,
-        btagPrefix = 'TEST',
-    )
-    if addR2Jets : process.updatedPatJets.jetSource = 'ak2PFpatJets'
-    process.updatedPatJets.addJetCorrFactors = False
-
-#SV needed for aggregation
-    process.load("RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi")
-    process.pfImpactParameterTagInfos.candidates  = "packedPFCandidates"
-    process.pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVertices"
-    process.pfImpactParameterTagInfos.jets = "ak2PFpatJets"
-
-    process.load("RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi")
-    process.pfInclusiveSecondaryVertexFinderTagInfos.extSVCollection = "slimmedSecondaryVertices"
-
-    process.updatedPatJets.addTagInfos = True
-    process.updatedPatJets.tagInfoSources = [ipTagInfoLabel_+"TagInfos", svTagInfoLabel_+"TagInfos"]
-    process.updatedPatJets.discriminatorSources =  ['pfParticleNetAK4JetTags:probb', 'pfParticleNetAK4JetTags:probb', 'pfParticleNetAK4JetTags:probbb', 'pfParticleNetAK4JetTags:probc', 'pfParticleNetAK4JetTags:probcc','pfParticleNetAK4JetTags:probpu','pfParticleNetAK4JetTags:probg','pfParticleNetAK4JetTags:probuds','pfParticleNetAK4JetTags:probundef','pfParticleNetAK4DiscriminatorsJetTags:BvsAll','pfParticleNetAK4DiscriminatorsJetTags:CvsL','pfParticleNetAK4DiscriminatorsJetTags:QvsG','pfParticleNetAK4DiscriminatorsJetTags:CvsB']
-
-# TODO: SV info not attached to jet collection?    
-    process.forest.insert(-1,
-                          process.pfImpactParameterTagInfos *
-                          process.pfInclusiveSecondaryVertexFinderTagInfos *
-                          process.candidateBtagging*
-                          process.updatedPatJets
-                      )
-    process.ak2PFJetAnalyzer.jetTag = "updatedPatJets"
-    process.ak2PFJetAnalyzer.doCandidateBtagging = True
-    
-    process.ak2PFJetAnalyzer.doSubJets = False   
-
-
-if doTracks:
-    process.ak2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
-    process.ak2PFJetAnalyzer.ipTagInfoLabel = cms.untracked.string(ipTagInfoLabel_)
-if doSvtx:
-    process.ak2PFJetAnalyzer.doSvtx = cms.untracked.bool(True)
-    process.ak2PFJetAnalyzer.svTagInfoLabel = cms.untracked.string(svTagInfoLabel_)
 
 if doGenAnalysis:      ## Track-Gen-matches, try to use AK2    
     process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
@@ -216,7 +169,8 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
 
     taggedGenParticlesName_ = "HFdecayProductTagger"
     ## Produces a std::vector<pat::PackedGenParticle> named HFdecayProductTagger
-    process.ak2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
+    # put this back somewhere else?
+    #process.ak2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
 
     process.bDecayAna = process.HiGenParticleAna.clone(
         genParticleSrc = cms.InputTag(taggedGenParticlesName_),
@@ -234,7 +188,7 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
 
     process.TrackToGenParticleMapProducer.jetSrc = cms.InputTag("updatedPatJets")  
     process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
-    process.forest.insert(-1,process.TrackToGenParticleMapProducer)
+    process.forest += process.TrackToGenParticleMapProducer
 
 # TODO: just update the analyzer created in the beginning if not aggregating? but if we do not aggregate, we want just inclusive CS jets? so maybe a different producer config?
 # TODO: add matching between jet collections to get b tag
@@ -256,7 +210,7 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
                 candToGenParticleMap = cms.InputTag("TrackToGenParticleMapProducer", "genConstitToGenParticleMap"),
             )
 
-            process.forest.insert(-1,process.aggregatedPFCands * process.aggregatedGenLevel )
+            process.forest +=process.aggregatedPFCands + process.aggregatedGenLevel 
 
             # cluster the new candidate collection to CS jets; at the moment run HiInclusiveJetAnalyzer for both the initial collection and this, probably change later
             # TODO: add matching between collections
@@ -269,9 +223,22 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
             process.akCs2PFJets.src = 'aggregatedPFCands'
             process.ak2GenJetsNoNu.src = 'aggregatedGenLevel' 
 
+            process.unsubJets = cms.EDProducer("JetMatcherDR",
+                                               matched = cms.InputTag("ak2PFpatJets"),
+                                               source = cms.InputTag("akCs2PFpatJets")
+                                           )
+
             process.akCs2PFJetAnalyzer = process.akCs4PFJetAnalyzer.clone(jetTag = "akCs2PFpatJets", jetName = 'akCs2PF', genjetTag = "ak2GenJetsNoNu")      
             process.akCs2PFJetAnalyzer.jetPtMin = cms.double(70.0)
-            process.forest.insert(-1,process.aggregatedJets * process.akCs2PFJetAnalyzer)
+            if doTracks:
+                process.akCs2PFJetAnalyzer.doTracks = cms.untracked.bool(True)
+                process.akCs2PFJetAnalyzer.ipTagInfoLabel = cms.untracked.string("pfImpactParameterTagInfos")
+            if doSvtx:
+                process.akCs2PFJetAnalyzer.doSvtx = cms.untracked.bool(True)
+                process.akCs2PFJetAnalyzer.svTagInfoLabel = cms.untracked.string("pfInclusiveSecondaryVertexFinderTagInfos")
+
+            process.forest += process.aggregatedJets * process.unsubJets *process.akCs2PFJetAnalyzer
+
 
     
 #########################

@@ -1,10 +1,10 @@
 import FWCore.ParameterSet.Config as cms
 
-from RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi import pfImpactParameterTagInfos
-pfImpactParameterTagInfos.jets = "slimmedJets"
-pfImpactParameterTagInfos.candidates = "packedPFCandidates"
-pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVerticesRecovery"
-from RecoBTag.SecondaryVertex.pfSecondaryVertexTagInfos_cfi import pfSecondaryVertexTagInfos
+#from RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi import pfImpactParameterTagInfos
+#pfImpactParameterTagInfos.jets = "slimmedJets"
+#pfImpactParameterTagInfos.candidates = "packedPFCandidates"
+#pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVerticesRecovery"
+#from RecoBTag.SecondaryVertex.pfSecondaryVertexTagInfos_cfi import pfSecondaryVertexTagInfos
 # leave IVF workflow commented out for reference -matt
 from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import inclusiveCandidateVertexFinder
 from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import candidateVertexMerger
@@ -36,23 +36,23 @@ pfParticleNetAK4TagInfos.vertices = "offlineSlimmedPrimaryVerticesRecovery"
 pfParticleNetAK4JetTags.src = "pfParticleNetAK4TagInfos"
 
 from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
-ak4PFJets = ak4PFJets.clone(jetPtMin = 1.0, rParam = 0.4, src = 'packedPFCandidates')
+ak2PFJets = ak4PFJets.clone(jetPtMin = 1.0, rParam = 0.2, src = 'packedPFCandidates')
 
 unsubJets = cms.EDProducer("JetMatcherDR",
-    matched = cms.InputTag("ak4PFJets"),
+    matched = cms.InputTag("ak2PFJets"),
     source = cms.InputTag("updatedPatJets")
 #    source = cms.InputTag("akCs2PFpatJets")
 )
 
 candidateBtagging = cms.Sequence(
-    pfImpactParameterTagInfos +
-    pfSecondaryVertexTagInfos +
+    #pfImpactParameterTagInfos +
+    #pfSecondaryVertexTagInfos +
     inclusiveCandidateVertexFinder +
     candidateVertexMerger +
     candidateVertexArbitrator +
     inclusiveCandidateSecondaryVertices +
     pfInclusiveSecondaryVertexFinderTagInfos +
-    ak4PFJets +
+    ak2PFJets +
     unsubJets +
     pfParticleNetAK4TagInfos +
     pfParticleNetAK4JetTags +  
