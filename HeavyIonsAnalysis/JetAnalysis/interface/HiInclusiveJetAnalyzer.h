@@ -49,6 +49,8 @@ public:
   void beginJob() override;
 
 private:
+
+
   // for reWTA reclustering-----------------------
   bool doWTARecluster_ = false;
   fastjet::JetDefinition WTAjtDef =
@@ -77,7 +79,7 @@ private:
   void analyzeGenSubjets(const reco::GenJet& jet);
 
   edm::InputTag jetTagLabel_;
-  edm::EDGetTokenT<pat::JetCollection> jetTag_;
+  edm::EDGetTokenT<edm::View<pat::Jet>> jetTag_;
   edm::EDGetTokenT<pat::JetCollection> matchTag_;
   edm::EDGetTokenT<edm::View<pat::PackedCandidate>> pfCandidateLabel_;
   edm::EDGetTokenT<reco::GenParticleCollection> genParticleSrc_;
@@ -118,7 +120,7 @@ private:
   
   bool doMatch_;
   bool useVtx_;
-  bool useRawPt_;
+  bool saveRawPt_;
   bool isMC_;
   bool useHepMC_;
   bool fillGenJets_;
