@@ -6,17 +6,17 @@ from RecoBTag.ImpactParameter.pfImpactParameterTagInfos_cfi import pfImpactParam
 pfImpactParameterTagInfos.jets = "ak2PFJets"
 pfImpactParameterTagInfos.candidates = "packedPFCandidates"
 pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVerticesRecovery"
-#from RecoBTag.SecondaryVertex.pfSecondaryVertexTagInfos_cfi import pfSecondaryVertexTagInfos
-from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import inclusiveCandidateVertexFinder
-from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import candidateVertexMerger
-from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import candidateVertexArbitrator
-from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import inclusiveCandidateSecondaryVertices
+from TrackingTools.TransientTrack.TransientTrackBuilder_cfi import *
+from RecoBTau.JetTagComputer.jetTagRecord_cfi import *
+from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import *
 from RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi import pfInclusiveSecondaryVertexFinderTagInfos
 inclusiveCandidateVertexFinder.primaryVertices  = "offlineSlimmedPrimaryVerticesRecovery"
 inclusiveCandidateVertexFinder.tracks= "packedPFCandidates"
+inclusiveCandidateVertexFinder.minHits = 0
+inclusiveCandidateVertexFinder.minPt = 0.8
 candidateVertexArbitrator.tracks = "packedPFCandidates"
 candidateVertexArbitrator.primaryVertices = "offlineSlimmedPrimaryVerticesRecovery"
-pfInclusiveSecondaryVertexFinderTagInfos.extSVCollection = "slimmedSecondaryVertices"  
+pfInclusiveSecondaryVertexFinderTagInfos.extSVCollection = "inclusiveCandidateSecondaryVertices"
 
 from PhysicsTools.PatAlgos.producersLayer1.jetProducer_cfi import patJets
 ak2PFpatJets = patJets.clone(
@@ -29,36 +29,18 @@ ak2PFpatJets = patJets.clone(
     addDiscriminators = False,
     getJetMCFlavour = False,
     useLegacyJetMCFlavour = False,
+    addBTagInfo = True,
     addTagInfos = True
 )
-
-
-from RecoBTag.ONNXRuntime.pfParticleNetAK4_cff import pfParticleNetAK4TagInfos, pfParticleNetAK4JetTags
-from RecoBTag.ONNXRuntime.pfParticleNetAK4DiscriminatorsJetTags_cfi import pfParticleNetAK4DiscriminatorsJetTags
-# temporarily run PNET on unsubtracted jets.  FIXME!  -Matt
-pfParticleNetAK4TagInfos.jets = "ak2PFpatJets"
-#pfParticleNetAK4TagInfos.unsubjet_map = "unsubJets"
-pfParticleNetAK4TagInfos.use_puppiP4 = False
-pfParticleNetAK4TagInfos.pf_candidates = "packedPFCandidates"
-pfParticleNetAK4TagInfos.puppi_value_map = ''
-pfParticleNetAK4TagInfos.vertex_associator = ""
-pfParticleNetAK4TagInfos.vertices = "offlineSlimmedPrimaryVerticesRecovery"
-
-pfParticleNetAK4JetTags.src = "pfParticleNetAK4TagInfos"
-
 
 
 unsubCandidateBtagging = cms.Sequence(
     ak2PFJets +
     pfImpactParameterTagInfos +
-    #pfSecondaryVertexTagInfos +
     inclusiveCandidateVertexFinder +
     candidateVertexMerger +
     candidateVertexArbitrator +
     inclusiveCandidateSecondaryVertices +
     pfInclusiveSecondaryVertexFinderTagInfos +
-    ak2PFpatJets +
-    pfParticleNetAK4TagInfos +
-    pfParticleNetAK4JetTags +  
-    pfParticleNetAK4DiscriminatorsJetTags 
+    ak2PFpatJets 
 )
