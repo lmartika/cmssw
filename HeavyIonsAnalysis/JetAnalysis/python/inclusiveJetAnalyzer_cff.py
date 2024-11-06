@@ -8,6 +8,7 @@ inclusiveJetAnalyzer = cms.EDAnalyzer(
     genjetTag = cms.InputTag("ak4HiGenJets"),
     eventInfoTag = cms.InputTag("generator"),
     isMC = cms.untracked.bool(False), 
+    useOnlyMatched = cms.untracked.bool(False), 
     fillGenJets = cms.untracked.bool(False),
     rParam = cms.double(0.4),
     pfCandidateLabel = cms.untracked.InputTag('packedPFCandidates'),

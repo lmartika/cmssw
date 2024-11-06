@@ -58,6 +58,7 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
   }
 
   isMC_ = iConfig.getUntrackedParameter<bool>("isMC", false);
+  useOnlyMatched_ = iConfig.getUntrackedParameter<bool>("useOnlyMatched", false);
   useHepMC_ = iConfig.getUntrackedParameter<bool>("useHepMC", false);
   fillGenJets_ = iConfig.getUntrackedParameter<bool>("fillGenJets", false);
 
@@ -626,6 +627,10 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       continue;
     if (std::abs(jet.eta()) > jetAbsEtaMax_)
       continue;
+    
+    if (isMC_  && useOnlyMatched_)
+      if(!jet.genJet()) continue;
+
 
     int matchIndex = -1;
     double drMin = 100;
