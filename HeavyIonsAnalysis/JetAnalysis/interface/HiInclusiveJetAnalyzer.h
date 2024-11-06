@@ -122,6 +122,7 @@ private:
   bool useVtx_;
   bool saveRawPt_;
   bool isMC_;
+  bool useOnlyMatched_;
   bool useHepMC_;
   bool fillGenJets_;
   bool useQuality_;
