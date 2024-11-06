@@ -107,7 +107,7 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
     pnetProbUDSJetTags_ = "pfParticleNetAK4JetTags:probuds";
     pnetProbPUJetTags_ = "pfParticleNetAK4JetTags:probpu";
     pnetProbUNDEFJetTags_ = "pfParticleNetAK4JetTags:probundef";
-    pfJPJetTags_ = jetName_ + "pfJetProbabilityBJetTags";
+    pfJPJetTags_ = "pfJetProbabilityBJetTags";
   }
   doSubEvent_ = false;
 
@@ -651,13 +651,15 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     
     if(matchIndex>=0){
       const pat::Jet& mjet = (*matchedjets)[matchIndex];
+      jets_.matchedR[jets_.nref] = drMin;
       jets_.matchedPt[jets_.nref] = mjet.pt();	  
       //jets_.matchedRawPt[jets_.nref] = mjet.correctedJet("Uncorrected").pt();
+      if(doCandidateBtagging_)jets_.discr_pfJP[jets_.nref]=mjet.bDiscriminator(pfJPJetTags_);  // NB: from matched jet!      
+
       if (isMC_) {
 	jets_.matchedHadronFlavor[jets_.nref] = mjet.hadronFlavour();
 	jets_.matchedPartonFlavor[jets_.nref] = mjet.partonFlavour();
       }      
-      jets_.matchedR[jets_.nref] = drMin;
     }
 
 
@@ -686,7 +688,6 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       jets_.discr_pnetProbUDS[jets_.nref]=jet.bDiscriminator(pnetProbUDSJetTags_);
       jets_.discr_pnetProbPU[jets_.nref]=jet.bDiscriminator(pnetProbPUJetTags_);
       jets_.discr_pnetProbUNDEF[jets_.nref]=jet.bDiscriminator(pnetProbUNDEFJetTags_);
-      jets_.discr_pfJP[jets_.nref]=jet.bDiscriminator(pfJPJetTags_);
     }
     if (doLegacyBtagging_) {
       jets_.discr_ssvHighEff[jets_.nref] = jet.bDiscriminator(simpleSVHighEffBJetTags_);
