@@ -106,8 +106,6 @@ process.load("HeavyIonsAnalysis.JetAnalysis.candidateBtaggingMiniAODuncorrjet_cf
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 
 
-
-
 # main forest sequence
 process.forest = cms.Path(
     process.HiForestInfo +
@@ -134,7 +132,7 @@ runAggregation = True
 
 
 
-if doGenAnalysis:      ## Track-Gen-matches, try to use AK2    
+if doGenAnalysis:
     process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
     process.genJetSequence += process.mergedGenParticles
     ## Produces a reco::GenParticleCollection named mergedGenParticles
@@ -146,7 +144,7 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
 
     taggedGenParticlesName_ = "HFdecayProductTagger"
     ## Produces a std::vector<pat::PackedGenParticle> named HFdecayProductTagger
-    # put this back somewhere else?
+    # Following probably not needed?
     #process.ak2PFJetAnalyzer.genParticles = cms.untracked.InputTag(taggedGenParticlesName_)
 
     process.bDecayAna = process.HiGenParticleAna.clone(
@@ -167,8 +165,6 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
     process.TrackToGenParticleMapProducer.genParticleSrc = cms.InputTag(taggedGenParticlesName_)
     process.forest += process.TrackToGenParticleMapProducer
 
-# TODO: just update the analyzer created in the beginning if not aggregating? but if we do not aggregate, we want just inclusive CS jets? so maybe a different producer config?
-# TODO: add matching between jet collections to get b tag
     if runAggregation:
             process.load("RecoHI.HiJetAlgos.aggregatedPFCollection_cfi")
             process.aggregatedPFCands.aggregateHF = True
@@ -189,8 +185,6 @@ if doGenAnalysis:      ## Track-Gen-matches, try to use AK2
 
             process.forest +=process.aggregatedPFCands + process.aggregatedGenLevel 
 
-            # cluster the new candidate collection to CS jets; at the moment run HiInclusiveJetAnalyzer for both the initial collection and this, probably change later
-            # TODO: add matching between collections
             process.aggregatedJets = cms.Sequence()
             from HeavyIonsAnalysis.JetAnalysis.clusterJetsFromMiniAOD_cff import setupHeavyIonJets
             setupHeavyIonJets('akCs2PF', process.aggregatedJets, process, isMC = 1, radius = 0.20, JECTag = 'AK2PF')
