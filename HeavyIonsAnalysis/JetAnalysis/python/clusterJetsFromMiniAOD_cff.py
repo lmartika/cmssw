@@ -45,7 +45,7 @@ def setupHeavyIonJets(tag, sequence, process, isMC, radius = -1, JECTag = 'None'
                           matched = 'hiSignalGenParticles',
                           src = tag+'Jets'),
                        process, sequence)
-
+        
         genjetcollection = 'ak'+str(radiustag)+'GenJetsNoNu'
 
         addToSequence( genjetcollection,
