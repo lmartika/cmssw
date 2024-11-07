@@ -8,6 +8,7 @@ pfImpactParameterTagInfos.candidates = "packedPFCandidates"
 pfImpactParameterTagInfos.primaryVertex = "offlineSlimmedPrimaryVerticesRecovery"
 from TrackingTools.TransientTrack.TransientTrackBuilder_cfi import *
 from RecoBTau.JetTagComputer.jetTagRecord_cfi import *
+from RecoBTag.ImpactParameter.pfJetProbabilityBJetTags_cfi import *
 from RecoVertex.AdaptiveVertexFinder.inclusiveVertexing_cff import *
 from RecoBTag.SecondaryVertex.pfInclusiveSecondaryVertexFinderTagInfos_cfi import pfInclusiveSecondaryVertexFinderTagInfos
 inclusiveCandidateVertexFinder.primaryVertices  = "offlineSlimmedPrimaryVerticesRecovery"
@@ -28,12 +29,13 @@ from PhysicsTools.PatAlgos.producersLayer1.jetProducer_cfi import patJets
 ak2PFpatJets = patJets.clone(
     jetSource = "ak2PFJets",
     tagInfoSources = cms.VInputTag('pfImpactParameterTagInfos','pfInclusiveSecondaryVertexFinderTagInfos'),
+    discriminatorSources = cms.VInputTag("pfJetProbabilityBJetTags"),
     JetFlavourInfoSource = "ak2JetFlavourInfos", 
     addAssociatedTracks = False,
     addJetCorrFactors = False,
     addGenPartonMatch = False,
     addGenJetMatch = False,
-    addDiscriminators = False,
+    addDiscriminators = True,
     getJetMCFlavour = True,
     useLegacyJetMCFlavour = False,
     addBTagInfo = True,
@@ -48,6 +50,7 @@ unsubCandidateBtagging = cms.Sequence(
     selectedHadronsAndPartons +
     ak2JetFlavourInfos +
     pfImpactParameterTagInfos +
+    pfJetProbabilityBJetTags + 
     inclusiveCandidateVertexFinder +
     candidateVertexMerger +
     candidateVertexArbitrator +
