@@ -16,4 +16,6 @@
 <use name="CondFormats/JetMETObjects"/>
 <use name="SimDataFormats/GeneratorProducts"/>
 <use name="CalibFormats/HcalObjects"/>
+<use name="AnalysisDataFormats/TrackInfo"/>
+
 <flags EDM_PLUGIN="1"/>

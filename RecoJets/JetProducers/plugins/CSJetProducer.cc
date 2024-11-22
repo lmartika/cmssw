@@ -94,11 +94,15 @@ void CSJetProducer::runAlgorithm(edm::Event& iEvent, edm::EventSetup const& iSet
   for (fastjet::PseudoJet& ijet : tempJets) {
     //----------------------------------------------------------------------
     // sift ghosts and particles in the input jet
-    std::vector<fastjet::PseudoJet> particles, ghosts;
+    // std::vector<fastjet::PseudoJet> particles, ghosts;
+    std::vector<fastjet::PseudoJet> particles, ghosts, pions, bmesons;
     fastjet::SelectorIsPureGhost().sift(ijet.constituents(), ghosts, particles);
     unsigned long nParticles = particles.size();
     if (nParticles == 0)
       continue;  //don't subtract ghost jets
+
+    fastjet::SelectorMassMin(0).sift(particles, pions, bmesons);
+    //    if(bmesons.size()>0) for(unsigned long nbs=0;nbs<bmesons.size();nbs++){std::cout<<"this is the B with neg mass "<<bmesons[nbs].m()<<std::endl;}
 
     //assign rho and rhom to ghosts according to local eta-dependent map + modulation as function of phi
     for (fastjet::PseudoJet& ighost : ghosts) {
@@ -146,8 +150,13 @@ void CSJetProducer::runAlgorithm(edm::Event& iEvent, edm::EventSetup const& iSet
     subtractor.set_do_mass_subtraction();
     subtractor.set_remove_all_zero_pt_particles(true);
 
-    std::vector<fastjet::PseudoJet> subtracted_particles = subtractor.do_subtraction(particles, ghosts);
-
+    //    std::vector<fastjet::PseudoJet> subtracted_particles = subtractor.do_subtraction(particles, ghosts);
+    std::vector<fastjet::PseudoJet> subtracted_particles;
+    //do subtraction only if there are pions
+    if(pions.size()!=0) subtracted_particles = subtractor.do_subtraction(pions, ghosts);
+    //insert the untouched Bs at the end of the list
+    subtracted_particles.insert(subtracted_particles.end(),bmesons.begin(),bmesons.end());
+    
     //Create subtracted jets
     fastjet::PseudoJet subtracted_jet = join(subtracted_particles);
     if (subtracted_jet.perp() > jetPtMin_)

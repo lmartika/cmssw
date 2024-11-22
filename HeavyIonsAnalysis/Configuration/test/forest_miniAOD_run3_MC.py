@@ -138,10 +138,10 @@ process.forest = cms.Path(
 
 addR3Jets = False
 addR3FlowJets = False
-addR4Jets = False
-addR4FlowJets = True
+addR4Jets = True
+addR4FlowJets = False
 matchJets = True             # Enables q/g and heavy flavor jet identification in MC
-addCandidateTagging = False
+addCandidateTagging = True
 doHIJetID = True             # Fill jet ID and composition information branches
 doWTARecluster = False        # Add jet phi and eta for WTA axis
 
