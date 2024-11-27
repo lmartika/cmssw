@@ -27,7 +27,8 @@
 
 #include "AnalysisDataFormats/TrackInfo/interface/TrackToGenParticleMap.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
-
+#include "DataFormats/JetMatching/interface/JetFlavourInfo.h"
+#include "DataFormats/JetMatching/interface/JetFlavourInfoMatching.h"
 //
 
 /**\class HiInclusiveJetAnalyzer
@@ -87,6 +88,8 @@ private:
   edm::EDGetTokenT<edm::View<reco::GenJet>> genjetTag_;
   edm::EDGetTokenT<edm::HepMCProduct> eventInfoTag_;
   edm::EDGetTokenT<GenEventInfoProduct> eventGenInfoTag_;
+  // b and c hadrons                                                                                                                                                                                                                             
+  edm::EDGetTokenT<reco::JetFlavourInfoMatchingCollection> jetFlavourInfosToken_;
 
   std::string jetName_;  //used as prefix for jet structures
   edm::EDGetTokenT<edm::View<reco::Jet>> subjetGenTag_;
@@ -356,6 +359,8 @@ private:
     float matchedPu[MAXJETS]={0};
     int matchedHadronFlavor[MAXJETS]={0};
     int matchedPartonFlavor[MAXJETS]={0};
+    int matchedNbHad[MAXJETS]={0};
+    int matchedNcHad[MAXJETS]={0};
 
     float discr_csvV2[MAXJETS]={0};
     float discr_pnetBvsAll[MAXJETS]={0};
