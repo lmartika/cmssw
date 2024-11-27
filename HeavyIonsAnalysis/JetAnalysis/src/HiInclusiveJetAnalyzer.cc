@@ -77,7 +77,7 @@ HiInclusiveJetAnalyzer::HiInclusiveJetAnalyzer(const edm::ParameterSet& iConfig)
     eventGenInfoTag_ = consumes<GenEventInfoProduct>(iConfig.getParameter<InputTag>("eventInfoTag"));
   }
   saveRawPt_ = iConfig.getUntrackedParameter<bool>("saveRawPt", true);
-
+  jetFlavourInfosToken_ = consumes<reco::JetFlavourInfoMatchingCollection>( iConfig.getParameter<edm::InputTag>("jetFlavourInfos") );
   doLegacyBtagging_ = iConfig.getUntrackedParameter<bool>("doLegacyBtagging", true);
   doCandidateBtagging_ = iConfig.getUntrackedParameter<bool>("doCandidateBtagging", false);
   useNewBtaggers_ = iConfig.getUntrackedParameter<bool>("useNewBtaggers", false);
@@ -300,6 +300,8 @@ void HiInclusiveJetAnalyzer::beginJob() {
     if (isMC_) {
       t->Branch("matchedHadronFlavor", jets_.matchedHadronFlavor, "matchedHadronFlavor[nref]/I");
       t->Branch("matchedPartonFlavor", jets_.matchedPartonFlavor, "matchedPartonFlavor[nref]/I");
+      t->Branch("matchedNbHad", jets_.matchedNbHad, "matchedNbHad[nref]/I");
+      t->Branch("matchedNcHad", jets_.matchedNcHad, "matchedNcHad[nref]/I");
     }
   }
 
@@ -590,9 +592,12 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   
   edm::Handle<reco::TrackToGenParticleMap> trackToGenParticleMap;
   //  edm::Handle<reco::TrackToGenParticleMap> genConstitToGenParticleMap;
+  edm::Handle<reco::JetFlavourInfoMatchingCollection> jetFlavourInfos;
+
   if (isMC_ and doTracks_) {
     edm::Handle<reco::GenParticleCollection> genparts;
     iEvent.getByToken(genParticleSrc_, genparts);
+    iEvent.getByToken(jetFlavourInfosToken_, jetFlavourInfos );
 
     // Track-gen ptcl tagging
     iEvent.getByToken(trackToGenParticleMapToken_, trackToGenParticleMap);
@@ -710,9 +715,23 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       if (isMC_) {
 	jets_.matchedHadronFlavor[jets_.nref] = mjet.hadronFlavour();
 	jets_.matchedPartonFlavor[jets_.nref] = mjet.partonFlavour();
-      }      
-    }
-
+	
+	for (const JetFlavourInfoMatching& jetFlavourInfoMatching : *jetFlavourInfos) {
+	  if (deltaR(mjet.p4(), jetFlavourInfoMatching.first->p4()) < 1e-6) {
+	    JetFlavourInfo jetInfo = jetFlavourInfoMatching.second;
+	    const GenParticleRefVector &bHadronsInJet = jetInfo.getbHadrons();
+	    const GenParticleRefVector &cHadronsInJet = jetInfo.getcHadrons();
+	    
+	    jets_.matchedNbHad[jets_.nref] = bHadronsInJet.size();
+	    jets_.matchedNcHad[jets_.nref] = cHadronsInJet.size();
+	    
+	    break;
+	  }
+	} // end loop over flavour info
+      }
+    }      
+  
+  
 
     ///////////////
     // DEBUG SVTX:
@@ -861,7 +880,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 	// 	}
 	
 	//  float ptcounter = 0;
-	for (const reco::CandidatePtr constit : mjet.getJetConstituents()) {
+	for (const reco::CandidatePtr &constit : mjet.getJetConstituents()) {
 	  // std::cout << "new jet constit with pt, eta, phi " << constit->pt() << " "  << constit->eta() << " "  << constit->phi() << " " << constit->charge() <<  std::endl;
 	  //	ptcounter += constit->pt();
 	  if (constit->charge() == 0) continue;
