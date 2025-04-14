@@ -102,6 +102,12 @@ process.load('HeavyIonsAnalysis.EventAnalysis.l1object_cfi')
 process.load('HeavyIonsAnalysis.JetAnalysis.akCs4PFJetSequence_pponPbPb_data_cff')
 
 ###############################################################################
+
+###############################
+# rho and random cone stuff
+process.load("HeavyIonsAnalysis.JetAnalysis.RhoAnalysis_cff")
+process.load("HeavyIonsAnalysis.JetAnalysis.RandomConeAnalysis_cff")
+###############################
 # main forest sequence
 process.forest = cms.Path(
     process.HiForestInfo +
@@ -221,6 +227,12 @@ process.forest += getattr(process,"ak"+jetLabel+"PFXpatJets")
 #process.akCs2PFJets.writeJetsWithConst = False
 process.akCs2PFJetAnalyzer.jetTag = "ak2PFXpatJets"
 process.forest += getattr(process,"akCs"+jetLabel+"PFJetAnalyzer")
+
+#########################
+# rho stuff, maybe not all needed
+# process.forest += process.hiFJRhoFlowModulationProducer * process.rhoAnalysis * process.randomConeAnalysisR4 * process.randomConeAnalysisR2
+process.forest += process.rhoAnalysis
+#########################
 
 
 #########################

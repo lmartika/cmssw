@@ -103,6 +103,12 @@ process.load('HeavyIonsAnalysis.JetAnalysis.akCs4PFJetSequence_pponPbPb_data_cff
 
 ###############################################################################
 
+###############################
+# rho and random cone stuff
+process.load("HeavyIonsAnalysis.JetAnalysis.RhoAnalysis_cff")
+process.load("HeavyIonsAnalysis.JetAnalysis.RandomConeAnalysis_cff")
+###############################
+
 # ZDC analyzer
 process.load('HeavyIonsAnalysis.ZDCAnalysis.QWZDC2018Producer_cfi')
 process.load('HeavyIonsAnalysis.ZDCAnalysis.QWZDC2018RecHit_cfi')
@@ -195,6 +201,11 @@ if doSvtx:
     
 process.forest += getattr(process,"akCs"+jetLabel+"PFJetAnalyzer")
 
+#########################
+# rho stuff, maybe not all needed
+# process.forest += process.hiFJRhoFlowModulationProducer * process.rhoAnalysis * process.randomConeAnalysisR4 * process.randomConeAnalysisR2
+# process.forest += process.rhoAnalysis
+#########################
 
 #########################
 # Event Selection -> add the needed filters here
