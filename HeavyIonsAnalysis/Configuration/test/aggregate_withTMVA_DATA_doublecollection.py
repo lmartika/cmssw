@@ -30,12 +30,13 @@ process.source = cms.Source("PoolSource",
 )
 
 if doRun2:
-    process.source.fileNames = cms.untracked.vstring('/store/hidata/HIRun2018A/HIHardProbes/MINIAOD/PbPb18_MiniAODv1-v1/00000/034807c1-0ae5-4540-bb81-80ab2f3bc01d.root')
+    process.source.fileNames = cms.untracked.vstring('file:/eos/user/l/lamartik/testsamples/pbpbdata2018/034807c1-0ae5-4540-bb81-80ab2f3bc01d.root')
+        #'/store/hidata/HIRun2018A/HIHardProbes/MINIAOD/PbPb18_MiniAODv1-v1/00000/034807c1-0ae5-4540-bb81-80ab2f3bc01d.root')
 
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(4000)
+    input = cms.untracked.int32(100)
     )
 
 ###############################################################################
@@ -142,7 +143,7 @@ jetLabel = "2"
 
 # add candidate tagging, copy/paste to add other jet radii
 from HeavyIonsAnalysis.JetAnalysis.deepNtupleSettingsFullAggregation_cff import candidateBtaggingMiniAOD
-candidateBtaggingMiniAOD(process, isMC = False, jetPtMin = jetPtMin, jetCorrLevels = ['L2Relative', 'L3Absolute'], doBtagging = doBtagging, labelR = jetLabel, runAggregation = runAggregation)
+candidateBtaggingMiniAOD(process, isMC = False, jetPtMin = jetPtMin, jetCorrLevels = ['L2Relative', 'L2L3Residual'], doBtagging = doBtagging, labelR = jetLabel, runAggregation = runAggregation)
 
 # setup jet analyzers
 #### Inclusive jets
