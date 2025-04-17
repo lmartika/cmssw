@@ -265,14 +265,13 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 
                     // Aggregate particles coming from HF decays into pseudo-B/D's and add them to the collection
                     for (auto it = hfConstituentsMap.begin(); it != hfConstituentsMap.end(); ++it) {
-		      //                        reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
                         for (edm::Ptr<reco::Candidate> hfConstituent : it->second) {
                             reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
-                            productLorentzVector.SetPt(hfConstituent->pt());
+
+			    productLorentzVector.SetPt(hfConstituent->pt());
                             productLorentzVector.SetEta(hfConstituent->eta());
                             productLorentzVector.SetPhi(hfConstituent->phi());
                             productLorentzVector.SetM(hfConstituent->mass());
-			    //     pseudoHF += productLorentzVector;
                             totalPseudoHF += productLorentzVector;                           
                             reco::PFCandidate daughter;
                             daughter.setP4(productLorentzVector);
@@ -504,7 +503,6 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                         } // endif 
                     } // endif *not* with truth info
 
-
                     // Add particle to output collection or from HF map
                     if (status == 1) {
                         fastjet::PseudoJet outConstit(constit->px(), constit->py(), constit->pz(), constit->energy());
@@ -525,19 +523,26 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
    
                 // Aggregate particles coming from HF decays into pseudo-B/C's  and add them to the collection
                 for (auto itTrackFromHF = hfConstituentsMap.begin(); itTrackFromHF != hfConstituentsMap.end(); itTrackFromHF++) {
-		  //                    reco::Candidate::PolarLorentzVector pseudoHF(0., 0., 0., 0.);
                     for (edm::Ptr<reco::Candidate> hfConstituent : itTrackFromHF->second) {
-                        reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
+			    
+		      reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
                         productLorentzVector.SetPt(hfConstituent->pt());
                         productLorentzVector.SetEta(hfConstituent->eta());
                         productLorentzVector.SetPhi(hfConstituent->phi());
-                        productLorentzVector.SetM(hfConstituent->mass());
-			//      pseudoHF += productLorentzVector;
-                        totalPseudoHF += productLorentzVector;
 
+			// Constituent masses are random for electrons and sometimes for others. Let's set them manually.
+			
+			if (abs(hfConstituent->pdgId()) == 11) productLorentzVector.SetM(0.000511169);   // electron
+			else if (abs(hfConstituent->pdgId()) == 13) productLorentzVector.SetM(0.105652); // muon
+			else if (abs(hfConstituent->pdgId()) == 211) productLorentzVector.SetM(0.139526); // pion
+			else productLorentzVector.SetM(hfConstituent->mass());
+			
+                        totalPseudoHF += productLorentzVector;
+			
                         reco::PFCandidate daughter;
                         daughter.setP4(productLorentzVector);
                         outputPseudoHF.addDaughter(daughter);
+
                     }
                 } // end tracks from B loop
 
@@ -547,7 +552,6 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                     //std::cout << "Setting id: " << outputPseudoHF.pdgId() << " mass " << outputPseudoHF.mass() << std::endl;
                     outputPseudoHF.setCharge(-5); // Set charge to avoid problems with chargedOnly selections
                     outputPseudoHF.setMass(totalPseudoHF.mass()*(-1));
- 
                     newPFCandCollection->push_back(outputPseudoHF);
 
 		}
@@ -557,7 +561,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
             } 
         }
 
-        // This part is directly from the pp analysis
+        // This part is directly from the pp analysis, not used at the moment
         else {
             // std::cout << "\tNot aggregating" << std::endl;
             std::vector<edm::Ptr<reco::Candidate>> constituents = {}; 

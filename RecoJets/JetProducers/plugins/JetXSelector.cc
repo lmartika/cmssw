@@ -93,10 +93,12 @@ public:
 	  //std::cout<<" getting mass "<<std::endl;
           // reco::PFCandidate::ParticleType pfCandidateType =
           // daughter->particleId(); int pfCandidateType = daughter->pdgId();
-          //float pfCandidateMass = daughter->mass();
-	  float pfCandidateMass = daughter->mass();
-          if (pfCandidateMass < -0.01){
-	    //std::cout<<" hooray!  "<<daughter->mass()<<std::endl;
+	  // float pfCandidateMass = daughter->mass();
+	  float pfCandidateCharge = daughter->charge();
+	  if (pfCandidateCharge < -4) {
+	  //if (pfCandidateMass < -0.01){
+	  //std::cout<<" hooray! mass:  "<<daughter->mass()<<std::endl;
+	  //std::cout<<" hooray! charge:  "<<daughter->charge()<<std::endl;
             isJetPlusX = true;
             break;
           }
