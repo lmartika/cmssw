@@ -281,6 +281,7 @@ private:
     float refBpt[MAXJETS]={0};
     float refBntracks[MAXJETS]={0};
     float refptCh[MAXJETS]={0};
+    
     int refNtrk[MAXJETS]={0};
 
 
@@ -454,7 +455,14 @@ private:
 
     float massHF[MAXJETS]={-999};
     float massHFgen[MAXJETS]={-999};
-    std::vector<std::vector<float>> massCand = {};
+
+    float ptHF[MAXJETS]={-999};
+    float ptHFgen[MAXJETS]={-999};
+
+    float ptCh[MAXJETS]={-999};
+    float ptChgen[MAXJETS]={-999};
+   
+   std::vector<std::vector<float>> massCand = {};
 
     ///
 

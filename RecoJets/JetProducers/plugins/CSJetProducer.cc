@@ -123,7 +123,7 @@ void CSJetProducer::runAlgorithm(edm::Event& iEvent, edm::EventSetup const& iSet
       } */
 
     // Insert lights back
-    particles.insert(particles.end(),lights.begin(),lights.end());
+    pions.insert(pions.end(),lights.begin(),lights.end());
     
     
     //assign rho and rhom to ghosts according to local eta-dependent map + modulation as function of phi

@@ -199,7 +199,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 
                 //  std::cout << "------->Aggregating HF for gen jet" << std::endl;               
                 reco::PFCandidate outputPseudoHF;
-                std::vector<reco::PFCandidate> constituentsNoHF;
+		//                std::vector<reco::PFCandidate> constituentsNoHF;
 
                 const reco::GenJet *genJet = jet.genJet();
 
@@ -231,7 +231,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 			  constituentsPF.setCharge(constit->charge());
 			  constituentsPF.setP4(constit->p4());
 			  constituentsPF.setPdgId(constit->pdgId());
-			  constituentsNoHF.push_back(constituentsPF);
+			  //			  constituentsNoHF.push_back(constituentsPF);
 			  newPFCandCollection->push_back(constituentsPF);
 			  //			  std::cout << "Filling a gen const with ch " << constit->charge() << " " << constit->pt() <<" id: " << constit->pdgId() << std::endl;
 			  continue;
@@ -257,7 +257,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                             constituentsPF.setCharge(constit->charge());
                             constituentsPF.setP4(constit->p4());
                             constituentsPF.setPdgId(constit->pdgId());
-                            constituentsNoHF.push_back(constituentsPF);
+			    //                            constituentsNoHF.push_back(constituentsPF);
                             newPFCandCollection->push_back(constituentsPF);
                         }
 
@@ -320,7 +320,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                 std::vector<edm::Ptr<reco::Candidate>> inputJetConstituents = jet.getJetConstituents();
 		//                std::vector<reco::PFCandidate> droppedTracks = {};
                 reco::PFCandidate outputPseudoHF;
-                std::vector<reco::PFCandidate> constituentsNoHF;
+		//                std::vector<reco::PFCandidate> constituentsNoHF;
 
                 // Particle collection to aggregate into pseudo-Bs
                 std::map<int, std::vector<edm::Ptr<reco::Candidate>>> hfConstituentsMap;
@@ -349,7 +349,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 		    constituentsPF.setCharge(constit->charge());
 		    constituentsPF.setP4(constit->p4());
 		    constituentsPF.setPdgId(constit->pdgId());
-		    constituentsNoHF.push_back(constituentsPF);
+		    //		    constituentsNoHF.push_back(constituentsPF);
 		    newPFCandCollection->push_back(constituentsPF);
 		    // std::cout << "Filling a const with ch " << constit->charge() << " " << constit->pt() << std::endl;
 		    continue;
@@ -363,7 +363,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 		      constituentsPF.setCharge(constit->charge());
 		      constituentsPF.setP4(constit->p4());
 		      constituentsPF.setPdgId(constit->pdgId());
-		      constituentsNoHF.push_back(constituentsPF);
+		      //		      constituentsNoHF.push_back(constituentsPF);
 		      newPFCandCollection->push_back(constituentsPF);
 		      continue;
 		    }

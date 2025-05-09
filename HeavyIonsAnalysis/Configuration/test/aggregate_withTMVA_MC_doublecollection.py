@@ -36,7 +36,7 @@ if doRun2:
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(20)
+    input = cms.untracked.int32(200)
     )
 
 ###############################################################################
@@ -74,7 +74,7 @@ if doRun2:
 
 # root output
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("HiForestMiniAOD2.root"))
+    fileName = cms.string("HiForestMiniAOD.root"))
 
 # # edm output for debugging purposes
 # process.output = cms.OutputModule(
@@ -219,7 +219,7 @@ getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doHiJetID = doHIJetID
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").runSubstructure = cms.untracked.bool(True)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doWTARecluster = doWTARecluster
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doCaloJets = doCaloJets
-getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetPtMin = 70
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetPtMin = 50
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").genPtMin = 80
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").useRawPt = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doPFjetID = cms.untracked.bool(False)
@@ -257,7 +257,7 @@ getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doHiJetID = doHIJetID
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").runSubstructure = cms.untracked.bool(True)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doWTARecluster = doWTARecluster
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doCaloJets = doCaloJets
-getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetPtMin = 70
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetPtMin = 50
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").genPtMin = 80
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").useRawPt = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doPFjetID = cms.untracked.bool(False)
