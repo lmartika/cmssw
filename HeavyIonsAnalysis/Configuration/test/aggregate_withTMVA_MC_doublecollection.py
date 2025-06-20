@@ -30,13 +30,19 @@ process.source = cms.Source("PoolSource",
 )
 
 if doRun2:
-#    process.source.fileNames = '/store/himc/HINPbPbSpring21MiniAOD/Bjet_pThat-15_TuneCP5_HydjetDrumMB_5p02TeV_Pythia8/MINIAODSIM/FixL1CaloGT_New_Release_112X_upgrade2018_realistic_HI_v9-v1/260000/6700a2b8-9c0d-4e1a-a774-2463e1e57785.root'
+#    process.source.fileNames = cms.untracked.vstring('/store/himc/HINPbPbSpring21MiniAOD/Bjet_pThat-15_TuneCP5_HydjetDrumMB_5p02TeV_Pythia8/MINIAODSIM/FixL1CaloGT_New_Release_112X_upgrade2018_realistic_HI_v9-v1/260000/0af4190a-74ea-4a92-a88e-96ee753d8ccb.root')
     process.source.fileNames = cms.untracked.vstring('/store/group/phys_heavyions/lamartik/bjet/043213d2-944a-4e18-b1b5-ef71e93ef850.root')
-#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1255081-1:1255081");
+#    process.source.eventsToProcess = cms.untracked.VEventRange("1:334986-1:334986"); # example of B splitting in reco level, centr.161
+#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1758572-1:1758572");  # cent 107, split + lost by TMVA
+#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1769063-1:1769063");  # cent 46, seems like b split over several jets, 2 b jet
+#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1758509-1:1758509");   # cent 2; no all bs in jets, tmva dropping 3/4 daughters
+#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1761370-1:1761370");   # cent 80
 
+
+   
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(200)
+    input = cms.untracked.int32(10)
     )
 
 ###############################################################################
@@ -207,7 +213,7 @@ setattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive",process.akCs4PFJetAnaly
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetTag = 'patJetsAKCs'+jetLabel+'PFNotAggrJets'
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetName = 'akCs'+jetLabel+'PF'
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").genjetTag = "ak"+jetLabel+"GenJetsRecluster"
-getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").fillGenJets = cms.untracked.bool(True)   # save only gen matched to reco jets
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").fillGenJets = cms.untracked.bool(False)   # save only gen matched to reco jets
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").matchJets = matchJets
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").matchTag = 'patJetsAK'+jetLabel+'PFUnsubJets'
 
@@ -221,6 +227,11 @@ getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doWTARecluster = doWTA
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doCaloJets = doCaloJets
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetPtMin = 50
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").genPtMin = 80
+
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").latektcut = cms.untracked.double(1)
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").SDktcut = cms.untracked.double(1)
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").SDcut = cms.untracked.double(0.2)
+
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").useRawPt = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").doPFjetID = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetAbsEtaMax = cms.untracked.double(jetAbsEtaMax)
@@ -246,7 +257,7 @@ getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetTag = 'selectedUpdatedPatJet
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetName = 'akCs'+jetLabel+'PF'
 #getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").genjetTag = "ak"+jetLabel+"GenJetsWithNu"
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").genjetTag = "ak"+jetLabel+"aggregatedGenJetsNoNu"
-getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").fillGenJets = cms.untracked.bool(True)
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").fillGenJets = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").matchJets = matchJets
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").matchTag = 'patJetsAK'+jetLabel+'PFUnsubJets'
 
@@ -259,6 +270,11 @@ getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doWTARecluster = doWTARecluster
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doCaloJets = doCaloJets
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetPtMin = 50
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").genPtMin = 80
+
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").latektcut = cms.untracked.double(1)
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").SDktcut = cms.untracked.double(1)
+getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").SDcut = cms.untracked.double(0.2)
+
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").useRawPt = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").doPFjetID = cms.untracked.bool(False)
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzer").jetAbsEtaMax = cms.untracked.double(jetAbsEtaMax)
