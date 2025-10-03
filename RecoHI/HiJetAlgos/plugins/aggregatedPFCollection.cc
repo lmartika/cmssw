@@ -177,7 +177,8 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
     //centrality
     edm::Handle<int> cbin_;
     iEvent.getByToken(CentralityBinTag_, cbin_);
-    int hiBin = *cbin_;    
+    int hiBin = *cbin_;
+    //    std::cout << "Centrality is " << hiBin << std::endl;
   
     edm::Handle<std::vector<reco::Vertex>> primaryVertices;
     iEvent.getByToken(primaryVerticesToken_, primaryVertices);
@@ -208,7 +209,6 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                 std::map<int, std::vector<edm::Ptr<reco::Candidate>>> hfConstituentsMap;
                 reco::Candidate::PolarLorentzVector totalPseudoHF(0., 0., 0., 0.);
 
-                //int HFjet = 0;
                 // Go over gen particles
 
                 if (genJet) {
@@ -244,21 +244,24 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                         if ((*candToGenParticleMap).find(constit) != (*candToGenParticleMap).end()) {
                             edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
                             status = matchGenParticle->status();
-                            //std::cout << "---- constit status in the gen map " << status << std::endl;               
+                            //std::cout << "---- constit status in the gen map " << status << std::endl;
                         }
                         // Add particle to output collection or from HF map
                         if (status >= 100) {
+			  //                            std::cout << "---- constit status in the gen map " << status << std::endl;			     
                             hfConstituentsMap[status].push_back(constit);
                         }
 
                         else if (status == 1) {
-                            //add for PF candidate collection output
+			  //add for PF candidate collection output
                             reco::PFCandidate constituentsPF;
                             constituentsPF.setCharge(constit->charge());
                             constituentsPF.setP4(constit->p4());
                             constituentsPF.setPdgId(constit->pdgId());
 			    //                            constituentsNoHF.push_back(constituentsPF);
                             newPFCandCollection->push_back(constituentsPF);
+
+			    //			    std::cout << "Found a stat 1 gen const with ch set, ch, pt, id: " << constituentsPF.charge() << " " << constit->charge() << " " << constit->pt() <<" id: " << constit->pdgId() << std::endl;
                         }
 
                     } // end constit loop 
@@ -272,7 +275,8 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                             productLorentzVector.SetEta(hfConstituent->eta());
                             productLorentzVector.SetPhi(hfConstituent->phi());
                             productLorentzVector.SetM(hfConstituent->mass());
-                            totalPseudoHF += productLorentzVector;                           
+                            totalPseudoHF += productLorentzVector;
+			    //			    std::cout << "Check constit in gen aggregation, mass: " << hfConstituent->mass() << " id: " << hfConstituent->pdgId() << std::endl;
                             reco::PFCandidate daughter;
                             daughter.setP4(productLorentzVector);
                             outputPseudoHF.addDaughter(daughter);
@@ -341,6 +345,9 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 
                 const reco::CandSecondaryVertexTagInfo *svTagInfo = mjet.tagInfoCandSecondaryVertex(svTagInfoLabel_.c_str());
 
+		//		int trueBtracksinreco = 0;
+		bool hasnu = false;
+		
                 for (const edm::Ptr<reco::Candidate> &constit : mjet.getJetConstituents()) {
                     //std::cout << "constit loop" << std::endl;
 		  if (chargedOnly_ && constit->charge() == 0) continue;
@@ -413,7 +420,6 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                         //float svtxTrkPtOverSv = missing_value;
 
                         float jtpt = jet.pt();
-                        
                         // Get IP info 
                         int trkIPIndex = itIPTrack - ipTracks.begin();
                         const reco::btag::TrackIPData trkIPdata = ipData[trkIPIndex];
@@ -503,6 +509,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                         } // endif 
                     } // endif *not* with truth info
 
+		    
                     // Add particle to output collection or from HF map
                     if (status == 1) {
                         fastjet::PseudoJet outConstit(constit->px(), constit->py(), constit->pz(), constit->energy());
@@ -513,18 +520,35 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                         constituentsPF.setPdgId(constit->pdgId());
 			//                        constituentsNoHF.push_back(constituentsPF);
                         newPFCandCollection->push_back(constituentsPF);
+
+			// Check if status 1 ptcls actually have a gen level B daughter
+			
+			/*	if ((*candToGenParticleMap).find(constit) != (*candToGenParticleMap).end()) {
+                            edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
+			                                int genstatus = matchGenParticle->status();
+			    			    if (genstatus > 1) trueBtracksinreco++;
+			                                 std::cout << "---- constit status in the gen map after setting status 1 in aggr: " << genstatus << std::endl;               
+			    } */
+			
                     }
                     else if (status >= 100) {
+		      
+		        if ((*candToGenParticleMap).find(constit) != (*candToGenParticleMap).end()) {
+                            edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
+                            int genstatus = matchGenParticle->status();
+			    if (genstatus > 1 and genstatus%2) hasnu = true;
+			    //                            std::cout << "---- constit status in the gen map after setting status 100 in aggr: " << genstatus << std::endl;               
+			    }
                         hfConstituentsMap[status].push_back(constit);
 			//			std::cout << "HF Constit pt: " << constit->pt() << " id: " << constit->pdgId() << " mass " << constit->mass() << std::endl;
                     }
-    
+		    
                 } // end jet constituents loop
-   
+
                 // Aggregate particles coming from HF decays into pseudo-B/C's  and add them to the collection
                 for (auto itTrackFromHF = hfConstituentsMap.begin(); itTrackFromHF != hfConstituentsMap.end(); itTrackFromHF++) {
                     for (edm::Ptr<reco::Candidate> hfConstituent : itTrackFromHF->second) {
-			    
+		      
 		      reco::Candidate::PolarLorentzVector productLorentzVector(0., 0., 0., 0.);
                         productLorentzVector.SetPt(hfConstituent->pt());
                         productLorentzVector.SetEta(hfConstituent->eta());
@@ -550,10 +574,12 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                     outputPseudoHF.setP4(totalPseudoHF);
                     outputPseudoHF.setPdgId(211); // Charged hadron
                     //std::cout << "Setting id: " << outputPseudoHF.pdgId() << " mass " << outputPseudoHF.mass() << std::endl;
-                    outputPseudoHF.setCharge(-5); // Set charge to avoid problems with chargedOnly selections
+                    outputPseudoHF.setCharge(-5); // Set charge to avoid problems with chargedOnly selections + random neg. masses in CMSSW
+		    if (hasnu) outputPseudoHF.setCharge(-6); // separate Bs from leptonic decays
+
+		    //	std::cout << "Check charge: " << outputPseudoHF.charge() << std::endl;
                     outputPseudoHF.setMass(totalPseudoHF.mass()*(-1));
                     newPFCandCollection->push_back(outputPseudoHF);
-
 		}
 		//  newPFCandCollectionHF->insert(newPFCandCollectionHF->end(), constituentsNoHF.begin(), constituentsNoHF.end());
                 //    newPFCandCollectionHF->push_back(outputPseudoHF);

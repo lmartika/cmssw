@@ -282,9 +282,12 @@ private:
     float refBpt[MAXJETS]={0};
     float refBntracks[MAXJETS]={0};
     float refptCh[MAXJETS]={0};
+
+    float refptCS[MAXJETS] = {0};
+    float refCSeta[MAXJETS] = {0};
+    float refCSphi[MAXJETS] = {0};
     
     int refNtrk[MAXJETS]={0};
-
 
     std::vector<std::vector<float>> jtSubJetPt = {};
     std::vector<std::vector<float>> jtSubJetEta = {};
@@ -454,9 +457,43 @@ private:
     int trkPdgId[MAXTRACKS]={0};
     int trkMatchSta[MAXTRACKS]={0};
 
+    float trkDeta[MAXTRACKS]={0};
+    float trkDphi[MAXTRACKS]={0};
+    float trkDR[MAXTRACKS]={0};
+
+    // From gen jet
+    int nrefTrk=0;
+    int refTrkJetId[MAXTRACKS]={0};
+    float refTrkPt[MAXTRACKS]={0};
+    float refTrkEta[MAXTRACKS]={0};
+    float refTrkPhi[MAXTRACKS]={0};
+    int refTrkPdgId[MAXTRACKS]={0};
+    int refTrkSta[MAXTRACKS]={0};
+    float refTrkY[MAXTRACKS]={0};
+    float refTrkMass[MAXTRACKS]={0};
+
+    // Matched gen particles
+    int ngenptcl=0;
+    int jtNgen[MAXJETS]={0};
+    int jtGenJetId[MAXTRACKS]={0};
+    int jtGenPdgId[MAXTRACKS]={0};
+    int jtGenSta[MAXTRACKS]={0};
+    float jtGenPt[MAXTRACKS]={0};
+    float jtGenEta[MAXTRACKS]={0};
+    float jtGenPhi[MAXTRACKS]={0};
+
+    
     float massHF[MAXJETS]={-999};
     float massHFgen[MAXJETS]={-999};
 
+    int genNu[MAXJETS]={-999};
+    
+    int trkMulti[MAXJETS]={0};
+    int genMulti[MAXJETS]={0};
+
+    int trkBMulti[MAXJETS]={0};
+    int genBMulti[MAXJETS]={0};
+    
     float ptHF[MAXJETS]={-999};
     float ptHFgen[MAXJETS]={-999};
 

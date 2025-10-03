@@ -1,4 +1,3 @@
-
 /*
   Based on the jet response analyzer
   Modified by Matt Nguyen, November 2010
@@ -195,15 +194,27 @@ void HiInclusiveJetAnalyzer::beginJob() {
   t->Branch("jtarea", jets_.jtarea, "jtarea[nref]/F"); */
 
   //  t->Branch("nCSjets", &jets_.nCSjets, "nCSjets/I");
-
+  
   t->Branch("ptHF", jets_.ptHF, "ptHF[nref]/F");
   t->Branch("massHF", jets_.massHF, "massHF[nref]/F");
   t->Branch("ptCh", jets_.ptCh, "ptCh[nref]/F");
+  t->Branch("trkMulti", jets_.trkMulti, "trkMulti[nref]/I");
+  t->Branch("trkBMulti", jets_.trkBMulti, "trkBMulti[nref]/I");
+    
   if (isMC_) {
+    t->Branch("genNu", jets_.genNu, "genNu[nref]/I");
+
+    t->Branch("genMulti", jets_.genMulti, "genMulti[nref]/I");
+    t->Branch("genBMulti", jets_.genBMulti, "genBMulti[nref]/I");
+ 
     t->Branch("ptHFgen", jets_.ptHFgen, "ptHFgen[nref]/F");
     t->Branch("massHFgen", jets_.massHFgen, "massHFgen[nref]/F");
     t->Branch("ptChgen", jets_.ptChgen, "ptChgen[nref]/F");
-  }
+
+    t->Branch("refptCS", jets_.massHFgen, "refptCS[nref]/F");
+    //    t->Branch("refCSeta", jets_.ptChgen, "refCSeta[nref]/F");
+    //    t->Branch("refCSphi", jets_.ptChgen, "refCSphi[nref]/F");
+ }
 
   
   if(doCaloJets_){
@@ -527,7 +538,8 @@ void HiInclusiveJetAnalyzer::beginJob() {
     t->Branch("trkPt", jets_.trkPt, "trkPt[ntrk]/F");
     t->Branch("trkEta", jets_.trkEta, "trkEta[ntrk]/F");
     t->Branch("trkPhi", jets_.trkPhi, "trkPhi[ntrk]/F");
-    t->Branch("trkIp3d", jets_.trkIp3d, "trkIp3d[ntrk]/F");
+    // Uncomment for training tuples?
+    /*    t->Branch("trkIp3d", jets_.trkIp3d, "trkIp3d[ntrk]/F");
     t->Branch("trkIp3dSig", jets_.trkIp3dSig, "trkIp3dSig[ntrk]/F");
     t->Branch("trkIp2d", jets_.trkIp2d, "trkIp2d[ntrk]/F");
     t->Branch("trkIp2dSig", jets_.trkIp2dSig, "trkIp2dSig[ntrk]/F");
@@ -537,12 +549,34 @@ void HiInclusiveJetAnalyzer::beginJob() {
     t->Branch("trkIpProb2d", jets_.trkIpProb2d, "trkIpProb2d[ntrk]/F");
     t->Branch("trkDz", jets_.trkDz, "trkDz[ntrk]/F");
     t->Branch("trkPdgId", jets_.trkPdgId, "trkPdgId[ntrk]/I");
-    t->Branch("trkMatchSta", jets_.trkMatchSta, "trkMatchSta[ntrk]/I");
+    t->Branch("trkMatchSta", jets_.trkMatchSta, "trkMatchSta[ntrk]/I"); */
 
+    t->Branch("trkDeta", jets_.trkDeta, "trkDeta[ntrk]/F");
+    t->Branch("trkDphi", jets_.trkDphi, "trkDphi[ntrk]/F");
+    t->Branch("trkDR", jets_.trkDR, "trkDR[ntrk]/F");
+
+
+    // For info about the matched gen ptcl - or can we do something smarter to avoid saving all this?
+    t->Branch("jtGenJetId", jets_.jtGenJetId, "jtGenJetId[ntrk]/I");
+    t->Branch("jtGenPdgId", jets_.jtGenPdgId, "jtGenPdgId[ntrk]/I");
+    t->Branch("jtGenSta", jets_.jtGenSta, "jtGenSta[ntrk]/I");
+    t->Branch("jtGenPt", jets_.jtGenPt, "jtGenPt[ntrk]/F");
+    t->Branch("jtGenEta", jets_.jtGenEta, "jtGenEta[ntrk]/F");
+    t->Branch("jtGenPhi", jets_.jtGenPhi, "jtGenPhi[ntrk]/F");
+    
     t->Branch("jtptCh", jets_.jtptCh, "jtptCh[nref]/F");
     if (isMC_) {
       t->Branch("refptCh", jets_.refptCh, "refptCh[nref]/F");
       t->Branch("refNtrk", jets_.refNtrk, "refNtrk[nref]/I");
+
+      // Constituent info in matched gen jet
+      t->Branch("nrefTrk", &jets_.nrefTrk, "nrefTrk/I");
+      t->Branch("refTrkJetId", jets_.refTrkJetId, "refTrkJetId[nrefTrk]/I");
+      t->Branch("refTrkPdgId", jets_.refTrkPdgId, "refTrkPdgId[nrefTrk]/I");
+      t->Branch("refTrkSta", jets_.refTrkSta, "refTrkSta[nrefTrk]/I");
+      t->Branch("refTrkPt", jets_.refTrkPt, "refTrkPt[nrefTrk]/F");
+      t->Branch("refTrkEta", jets_.refTrkEta, "refTrkEta[nrefTrk]/F");
+      t->Branch("refTrkPhi", jets_.refTrkPhi, "refTrkPhi[nrefTrk]/F");
     }
   }
 
@@ -654,6 +688,8 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
   
   jets_.nvtx = primaryVertices->size();
   if (doTracks_) jets_.ntrk = 0;
+  jets_.nrefTrk = 0;
+  
   if (doSvtx_) {
     jets_.nsvtx = 0;
     jets_.ntrkInSvtxNotInJet = 0;
@@ -735,7 +771,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     int matchCSIndex = -1;
     jets_.jtptCS[jets_.nref] = -999;
     jets_.jtCSdr[jets_.nref] = -999;
-    
+
     if (matchOriginal_) {   // 
       double drMin = 100;
       for (unsigned int imatch = 0; imatch < originalCSjets->size(); ++imatch) {
@@ -749,9 +785,13 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       const pat::Jet& mjet = (*originalCSjets)[matchCSIndex];
       jets_.jtptCS[jets_.nref] = mjet.correctedJet("Uncorrected").pt();
       jets_.jtCSdr[jets_.nref] = drMin;
+
+      const reco::GenJet* genjet = mjet.genJet();
+      if (genjet) jets_.refptCS[jets_.nref] = genjet->pt();
+      //      jets_.refCSeta[jets_.nref] = genjet->eta();
+      //      jets_.refCSphi[jets_.nref] = genjet->phi();
     }
     
-
     if (doCandidateBtagging_ && useNewBtaggers_) {
       for (const auto& t : jetTaggers) {
         auto& discr = jets_discr_.at(t.first);
@@ -776,6 +816,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       jets_.discr_deepCSV[jets_.nref] = jet.bDiscriminator(deepCSVJetTags_);
       jets_.discr_pfJP[jets_.nref] = jet.bDiscriminator(pfJPJetTags_);
     }
+
     if (doLegacyBtagging_) {
       jets_.discr_ssvHighEff[jets_.nref] = jet.bDiscriminator(simpleSVHighEffBJetTags_);
       jets_.discr_ssvHighPur[jets_.nref] = jet.bDiscriminator(simpleSVHighPurBJetTags_);
@@ -940,7 +981,6 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
     int matchIndex = -1;
     if (doMatch_) {
       // Alternative reconstruction matching (PF for calo, calo for PF)
-
       double drMin = 100;
       for (unsigned int imatch = 0; imatch < matchedjets->size(); ++imatch) {
         const pat::Jet& mjet = (*matchedjets)[imatch];
@@ -1096,7 +1136,9 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 	  jets_.trkPt[ijetTrack] = constit->pt();
 	  jets_.trkEta[ijetTrack] = constit->eta();
 	  jets_.trkPhi[ijetTrack] = constit->phi();
-	  
+
+	  // Uncomment following for training tuples:
+	  /*
 	  jets_.trkIp3d[ijetTrack] = trkIPData.ip3d.value();
 	  jets_.trkIp3dSig[ijetTrack] = trkIPData.ip3d.significance();
 	  
@@ -1108,7 +1150,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 	  
 	  jets_.trkDistToAxis[ijetTrack] = trkIPData.distanceToJetAxis.value();
 	  jets_.trkDistToAxisSig[ijetTrack] = trkIPData.distanceToJetAxis.significance();
-	  
+	  */
 	  jets_.trkSvtxId[ijetTrack] = -1;
 	
 	  if (doSvtx_ && matchIndex >=0 && mjet.hasTagInfo(svTagInfoLabel_.c_str())) {
@@ -1127,6 +1169,19 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
 	  if (isMC_ && trackToGenParticleMap->find(constit) != trackToGenParticleMap->end()) { 
 	    edm::Ptr<pat::PackedGenParticle> matchGenParticle = trackToGenParticleMap->at(constit);
 	    status = matchGenParticle->status();
+
+	    jets_.trkDeta[ijetTrack] = matchGenParticle->eta()-constit->eta();
+	    jets_.trkDphi[ijetTrack] = matchGenParticle->phi()-constit->phi();;
+	    jets_.trkDR[ijetTrack] = reco::deltaR(constit->eta(),constit->phi(),matchGenParticle->eta(),matchGenParticle->phi());
+	    //	    std::cout << " Etas: " << matchGenParticle->eta() << " " << constit->eta() << " " << reco::deltaR2(constit->eta(),constit->phi(),matchGenParticle->eta(),matchGenParticle->phi()) <<std::endl;
+	    // Save info on the matched particles
+	    jets_.jtGenJetId[ijetTrack] = jets_.nref;
+	    jets_.jtGenPdgId[ijetTrack] = matchGenParticle->pdgId();
+
+	    jets_.jtGenPt[ijetTrack] = matchGenParticle->pt();
+	    jets_.jtGenEta[ijetTrack] = matchGenParticle->eta();
+	    jets_.jtGenPhi[ijetTrack] = matchGenParticle->phi();
+  
 	  }
 	  jets_.trkMatchSta[ijetTrack] = status;
 	  jets_.trkPdgId[ijetTrack] = constit->pdgId();
@@ -1237,15 +1292,77 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
         jets_.refdphijt[jets_.nref] = reco::deltaPhi(jet.phi(), genjet->phi());
         jets_.refdrjt[jets_.nref] = reco::deltaR(jet.eta(), jet.phi(), genjet->eta(), genjet->phi());
 
+	// Loop over the gen jet constituents to see distance to reco jet axis
+
+	for (auto genConstit : genjet->getJetConstituents()) {
+	  //	  cout << "Check gen constits" << endl;
+	  if (genConstit->pt() < trkPtCut_) continue;
+	  if (genConstit->charge() == 0) continue;
+
+	  bool isNeutrino = (genConstit->pdgId() == 12); // nue
+	  isNeutrino &= (genConstit->pdgId() == 14); // numu
+	  isNeutrino &= (genConstit->pdgId() == 16); // nutau
+	  isNeutrino &= (genConstit->pdgId() == 18); // nutau'
+	  if (isNeutrino) continue;
+	  
+
+	  int irefTrack = jets_.nrefTrk + jets_.refNtrk[jets_.nref]; // TODO: check
+	  jets_.refTrkJetId[irefTrack] = jets_.nref;          
+	  jets_.refTrkPt[irefTrack] = genConstit->pt();
+	  jets_.refTrkEta[irefTrack] = genConstit->eta();
+	  jets_.refTrkPhi[irefTrack] = genConstit->phi();
+	  jets_.refTrkPdgId[irefTrack] = genConstit->pdgId();
+	  //  std::cout << "Ireftrack: " << irefTrack;
+	  //  std::cout << "genConstit->pt()=" << genConstit->pt() << ", genConstit->eta()=" << genConstit->eta() << ", genConstit->phi()=" << genConstit->phi() << std::endl;
+
+	  // pack genConstit to retrieve status
+	  reco::GenParticle genParticleConstit;
+
+	  pat::PackedGenParticle packedGenConstit(genParticleConstit, reco::GenParticleRef());
+	  // std::cout << "\tpackedGenConstit.pt()=" << packedGenConstit.pt() << ", packedGenConstit.eta()=" << packedGenConstit.eta() << ", packedGenConstit.phi()=" << packedGenConstit.phi() << std::endl;
+	  
+	  /*double eps=1e-3;
+	  // bool foundMatch=false;
+	  Int_t genStatus = -1;
+	  for (auto genParticle : *genParticles) {
+	    if (std::abs(genParticle.pt()-packedGenConstit.pt())>eps) continue;
+	    if (std::abs(genParticle.eta()-packedGenConstit.eta())>eps) continue;
+	    if (std::abs(genParticle.phi()-packedGenConstit.phi())>eps) continue;
+	    // foundMatch=true;
+	    genStatus = genParticle.status();
+	    // std::cout << "\tgenParticle.pt()=" << genParticle.pt() << ", genParticle.eta()=" << genParticle.eta() << ", genParticle.phi()=" << genParticle.phi() << std::endl;
+	    // std::cout << "\t\tgenParticle.status()=" << genParticle.status() << std::endl;
+	  }
+	  
+	  // if (!foundMatch) std::cout << "didn't find match" << std::endl;
+	  // std::cout << "jets_.nref=" << jets_.nref << ", irefTrack=" << irefTrack << ", jets_.refTrkSta[irefTrack]=" << jets_.refTrkSta[irefTrack] << std::endl;
+	  
+	  jets_.refTrkSta[irefTrack] = genStatus; */ // Would be useful to have tho
+          
+	  jets_.refNtrk[jets_.nref] += 1;
+	} // end loop of gen constits
+
+	jets_.nrefTrk += jets_.refNtrk[jets_.nref];
+	/*	std::cout << "Check gen jet constituents in respect to reco jet axis " << jet.eta() << " " << jet.phi() << std::endl;
+	auto daughters = genjet->getJetConstituents();
+
+	for (auto it = daughters.begin(); it!=daughters.end(); ++it){
+      //       std::cout << "scan gen jet consts, mass: " << (**it).mass() << " charge: " << (**it).charge() << " id: "<< (**it).pdgId() << std::endl;
+      //      if((**it).pt() > 1) std::cout << "scan gen jet consts, mass: " << (**it).mass() << " charge: " << (**it).charge() << " id: "<< (**it).pdgId() <<  " pt: "<< (**it).pt() << std::endl;
+      //if we want only charged constituents and the daughter charge is 0, skip it
+	  //	  std::cout << (**it).eta() << " " << (**it).phi() << " " <<  deltaR(jet, (**it)) << std::endl;
+	  } */
+
+	
 	if (runSubstructure) {
 	  IterativeDeclusteringGen(0, 1, *genjet);
-
+	  
 	  if (doSplitMatching_) {
 	    TruthRecoRecoTruthMatching_SD();
 	    TruthRecoRecoTruthMatching_latekt();
 	    //vangi's
 	    jets_.jtJetSplits = {};
-	    jets_.refJetSplits = {};	    
+	    jets_.refJetSplits = {};
 	  }
 	}
 
@@ -1315,9 +1432,9 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       //  jets_.refparton_flavor[jets_.nref] = -999;
       //      }
     }
-
     jets_.nref++;
   }
+
 
   if (isMC_ and fillGenJets_) {
     if (useHepMC_) {
@@ -1425,7 +1542,7 @@ void HiInclusiveJetAnalyzer::analyze(const Event& iEvent, const EventSetup& iSet
       }
     }
   }
-  
+
   if(doCaloJets_){
     for (unsigned int j = 0; j < calojets->size(); ++j) {
       const reco::Jet& jet = (*calojets)[j];
@@ -1474,6 +1591,8 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(int groom_type, bool groom
     jets_.massHF[jets_.nref] = -999;
     jets_.ptHF[jets_.nref] = -999;
     jets_.ptCh[jets_.nref] = -999;
+    jets_.trkMulti[jets_.nref] = 0;
+    jets_.trkBMulti[jets_.nref] = 0;
       
     for (auto it = daughters.begin(); it!=daughters.end(); ++it){
 
@@ -1481,7 +1600,9 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(int groom_type, bool groom
       if (doChargedConstOnly_ && (**it).charge()==0) continue;
       //if we want only charged constituents and the daughter charge is 0, skip it
       if ((**it).pt()<1) continue; //Particle pt cut
-             
+
+      jets_.trkMulti[jets_.nref]++;
+      
       // use TLorentzVector to create the pseudojet, check that mass has correct sign
       TLorentzVector tempCand;
       double mass = (**it).mass();   // to be sure
@@ -1491,11 +1612,15 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(int groom_type, bool groom
       else if (abs((**it).pdgId()) == 211 and (**it).charge() > -5) mass = 0.139526;
       
       //      std::cout << "scan jet consts in declustering, mass: " << (**it).mass() << " charge: " << (**it).charge() << " id: "<< (**it).pdgId() << " pt: " << (**it).pt() << std::endl;
-      if ((**it).charge() == -5) {      // Assumes charge is set in aggregator
+      if ((**it).charge() < -4) {      // Assumes charge is set in aggregator
 	mass = -((**it).mass());
 	jets_.massHF[jets_.nref] = mass;
 	jets_.ptHF[jets_.nref] = (**it).pt();
-	//	std::cout << "HF mass is " << -((**it).mass()) << " charge : " << (**it).charge() << std::endl;
+	//	jets_.trkBMulti[jets_.nref] = (**it).numberOfDaughters();
+	
+	if ((**it).charge() == -6) jets_.genNu[jets_.nref]= 1;
+	else  jets_.genNu[jets_.nref] = 0;
+	//	std::cout << "HF mass is " << -((**it).mass()) << " charge : " << (**it).charge() << "tracks: " << jets_.trkMulti[jets_.nref] << " B daughters: " << jets_.trkBMulti[jets_.nref] << " or " << (**it).numberOfDaughters() << std::endl;
       }
       
       tempCand.SetPtEtaPhiM((**it).pt(),(**it).eta(),(**it).phi(),mass);
@@ -1578,7 +1703,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(int groom_type, bool groom
         double k_t = j2.perp()*delta_R;
         z = j2.perp()/(j1.perp()+j2.perp());
 
-      //  std::cout << "Reco split " << nsplit << " with k_T=" << k_t << " z=" << z << " eta " << j2.eta() << " phi " << j2.phi() <<  std::endl; 
+	//       std::cout << "Reco split " << nsplit << " with k_T=" << k_t << " z=" << z << " eta " << j2.eta() << " phi " << j2.phi() <<  std::endl; 
 
 	if (( !groom_combine and groom_type == 1 and z > SDcut and k_t > SDktcut and !stopSD) or (groom_combine and z > SDcut and k_t > SDktcut and !stopSD )) { 
           stopSD = 1;
@@ -1596,23 +1721,23 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringRec(int groom_type, bool groom
           latekt_split = nsplit;
 	  flagHFkt = flagHF;
 
+
         }
-	//	std::cout << "mid results: " << rg_SD << " " << rg_latekt << std::endl;
         jj = j1;
         nsplit = nsplit+1;
       }
-      //    std::cout << "end results: " << rg_SD << " " << rg_latekt << std::endl;
-    jets_.jt_z_SD[jets_.nref] = zg_SD;
-    jets_.jt_rg_SD[jets_.nref] = rg_SD;
-    jets_.jt_ktg_SD[jets_.nref] = ktg_SD;
-    jets_.jt_split_SD[jets_.nref] = SD_split;
-    jets_.jt_hasHF_SD[jets_.nref] = flagHFSD;
 
-    jets_.jt_z_latekt[jets_.nref] = zg_latekt;
-    jets_.jt_rg_latekt[jets_.nref] = rg_latekt;
-    jets_.jt_ktg_latekt[jets_.nref] = ktg_latekt;
-    jets_.jt_split_latekt[jets_.nref] = latekt_split;
-    jets_.jt_hasHF_latekt[jets_.nref] = flagHFkt;
+      jets_.jt_z_SD[jets_.nref] = zg_SD;
+      jets_.jt_rg_SD[jets_.nref] = rg_SD;
+      jets_.jt_ktg_SD[jets_.nref] = ktg_SD;
+      jets_.jt_split_SD[jets_.nref] = SD_split;
+      jets_.jt_hasHF_SD[jets_.nref] = flagHFSD;
+      
+      jets_.jt_z_latekt[jets_.nref] = zg_latekt;
+      jets_.jt_rg_latekt[jets_.nref] = rg_latekt;
+      jets_.jt_ktg_latekt[jets_.nref] = ktg_latekt;
+      jets_.jt_split_latekt[jets_.nref] = latekt_split;
+      jets_.jt_hasHF_latekt[jets_.nref] = flagHFkt;
     }
   } 
 
@@ -1659,27 +1784,30 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringGen(int groom_type, bool groom
     jets_.massHFgen[jets_.nref] = -999;
     jets_.ptHFgen[jets_.nref] = -999;
     jets_.ptChgen[jets_.nref] = -999;
+    jets_.genMulti[jets_.nref] = 0;
+    jets_.genBMulti[jets_.nref] = 0;
 
     for(auto it = daughters.begin(); it!=daughters.end(); ++it){
       //      std::cout << "scan gen jet consts, mass: " << (**it).mass() << " charge: " << (**it).charge() << " id: "<< (**it).pdgId() << std::endl;
-
+      //      if((**it).pt() > 1) std::cout << "scan gen jet consts, mass: " << (**it).mass() << " charge: " << (**it).charge() << " id: "<< (**it).pdgId() <<  " pt: "<< (**it).pt() << std::endl;
       //if we want only charged constituents and the daughter charge is 0, skip it
       if (doChargedConstOnly_ && (**it).charge()==0) continue;
     
       if ((**it).pt()<1) continue; //Particle Pt cut
-
+      jets_.genMulti[jets_.nref]++;
+      
       TLorentzVector tempCand;
       double mass = (**it).mass(); 
       
       //      std::cout << "scan jet consts in declustering, mass: " << (**it).mass() << " charge: " << (**it).charge() << " id: "<< (**it).pdgId() << " pt: " << (**it).pt() << std::endl;
-      if ((**it).charge() == -5) {      // Assumes charge is set in aggregator
+      if ((**it).charge() < -4) {      // Assumes charge is set in aggregator
 	mass = -((**it).mass());
 	jets_.massHFgen[jets_.nref] = mass;
 	jets_.ptHFgen[jets_.nref] = (**it).pt();
-	//	std::cout << "HF mass is " << -((**it).mass()) << " or " << jets_.massHFgen[jets_.nref] << std::endl;
+	//	jets_.genBMulti[jets_.nref] = (**it).numberOfDaughters();
+	//	std::cout << "HF gen mass is " << -((**it).mass()) << " or " << jets_.massHFgen[jets_.nref] << " and Ndaughters: " << jets_.genBMulti[jets_.nref] << std::endl;
       }
 
-      
       tempCand.SetPtEtaPhiM((**it).pt(),(**it).eta(),(**it).phi(),mass);
       
       // std::cout << "scan gen jet consts, mass: " << (**it).mass() << " charge: " << (**it).charge() << std::endl;
@@ -1736,7 +1864,7 @@ void HiInclusiveJetAnalyzer::IterativeDeclusteringGen(int groom_type, bool groom
         double k_t = j2.perp()*delta_R;
         z = j2.perp()/(j1.perp()+j2.perp());   
 
-      //  std::cout << "Truth split " << nsplit << " with k_T=" << k_t << " z=" << z << " eta " << j2.eta() << " phi " << j2.phi() <<  std::endl; 
+	//       std::cout << "Truth split " << nsplit << " with k_T=" << k_t << " z=" << z << " eta " << j2.eta() << " phi " << j2.phi() <<  std::endl; 
 
         if (( !groom_combine and groom_type == 1 and z > SDcut and k_t > SDktcut and !stopSD) or (groom_combine and z > SDcut and k_t > SDktcut and !stopSD)) { 
           stopSD = true;
@@ -1835,8 +1963,10 @@ void HiInclusiveJetAnalyzer::TruthRecoRecoTruthMatching_latekt(){
   else {
     fastjet::PseudoJet latekt_R_split = jets_.jtJetSplits.at(jets_.jt_split_latekt[jets_.nref]);
     fastjet::PseudoJet latekt_T_split = jets_.refJetSplits.at(jets_.ref_split_latekt[jets_.nref]);
-    // std::cout <<"Reco: eta = "<< latekt_R_split.eta() << ", phi = " << latekt_R_split.phi() << ", DeltaR = "<< latekt_R_split.delta_R(latekt_T_split) <<" latekt reco  splitting in matching" << std::endl;
- 
+    //    std::cout <<"Reco: eta = "<< latekt_R_split.eta() << ", phi = " << latekt_R_split.phi() << ", DeltaR = "<< latekt_R_split.delta_R(latekt_T_split) <<" latekt reco  splitting in matching" << std::endl;
+
+
+    
     // std::cout << "Angle between latekt splits is dR = " << latekt_R_split.delta_R(latekt_T_split) << std::endl;
     // for(size_t i{0};i<jets_.jtJetConstituent.size();++i) std::cout<< " reco "<< i <<" : DeltaR = "<< jets_.jtJetConstituent.at(i).delta_R(latekt_T_split)<<", k_T = "<< jets_.jtJetConstituent.at(i).pt()<<" GeV"<< std::endl;
     jets_.jt_ref_dR_latekt[jets_.nref] = latekt_R_split.delta_R(latekt_T_split);
@@ -1872,6 +2002,9 @@ void HiInclusiveJetAnalyzer::TruthRecoRecoTruthMatching_SD(){
     //  std::cout<<"Run SD split matching"<<std::endl;
     fastjet::PseudoJet SD_R_split = jets_.jtJetSplits.at(jets_.jt_split_SD[jets_.nref]);
     fastjet::PseudoJet SD_T_split = jets_.refJetSplits.at(jets_.ref_split_SD[jets_.nref]);
+    
+    //    std::cout <<"Reco: eta = "<< SD_R_split.eta() << ", phi = " << SD_R_split.phi() << ", DeltaR = "<< SD_R_split.delta_R(SD_T_split) <<" latekt reco  splitting in matching" << std::endl;
+
     jets_.jt_ref_dR_SD[jets_.nref] = SD_R_split.delta_R(SD_T_split);
     RecoTruthSplitMatching(jets_.refJetSplits, SD_R_split, jets_.ref_isClosestToReco_SD, jets_.ref_split_SD);
     RecoTruthSplitMatching(jets_.jtJetSplits,  SD_T_split, jets_.jt_isClosestToTruth_SD,  jets_.jt_split_SD);

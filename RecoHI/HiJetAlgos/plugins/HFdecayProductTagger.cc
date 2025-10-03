@@ -68,7 +68,7 @@ private:
   //void visible( reco::Candidate::PolarLorentzVector &v, const reco::Candidate &particle, int doCharge) const;
 
   bool tagBorC_; // true to tag B, false to tag C
-
+  mutable bool hasnu; // To flag daughter from leptonic decays
 };
 
 HFdecayProductTagger::HFdecayProductTagger(const edm::ParameterSet& cfg)
@@ -100,6 +100,9 @@ void HFdecayProductTagger::produce(edm::StreamID, edm::Event &evt, const edm::Ev
     // std::cout << "Tagging fromB's as usual" << std::endl;
     for (const reco::GenParticle& genPart : *genParticles) {
       if(isFinalB(genPart)){
+
+	hasnu = false; // addDaughters will set to true if there's a nu
+	
         // std::cout << "Found a B, adding its daughters" << std::endl;
         // Do NOT add the B
         //outputCollection->push_back(genPart);
@@ -122,12 +125,12 @@ void HFdecayProductTagger::produce(edm::StreamID, edm::Event &evt, const edm::Ev
         //           << " packed daughter phi " << testDaughter.phi()
         //           << std::endl;
 
-	
         for (const reco::GenParticle &daughter : daughterCollection){
-          // std::cout << "daughter charge " << daughter.charge() << " and status " << daughter.status() << std::endl;
-          // auto packedDaughter = pat::PackedGenParticle(daughter, reco::GenParticleRef());
-          pat::PackedGenParticle packedDaughter(daughter, reco::GenParticleRef());
-          // std::cout << "packed daughter charge " << packedDaughter.charge() << " and status " << packedDaughter.status() << std::endl;
+          //std::cout << "daughter charge " << daughter.charge() << " and status " << daughter.status() << " and pdgId " << daughter.pdgId() << std::endl;
+
+	  //          pat::PackedGenParticle packedDaughter(daughter, reco::GenParticleRef());
+	  pat::PackedGenParticle packedDaughter(reco::GenParticle(daughter.charge(), daughter.p4(), daughter.vertex(), daughter.pdgId(), daughter.status() + (hasnu ? 1 : 0), true), reco::GenParticleRef());
+	  
           outputCollection->push_back(packedDaughter);
         }
         // (*outputCollection).insert((*outputCollection).end(), daughterCollection.begin(), daughterCollection.end());
@@ -302,6 +305,10 @@ reco::GenParticleCollection HFdecayProductTagger::addDaughters(const reco::Candi
     // Add only stable daughters
     if (daughter.status() == 1) {
       //std::cout << "Found a daughter!" << std::endl;
+    
+      int pdgid = abs(daughter.pdgId());
+      if (pdgid == 12 or pdgid == 14 or pdgid == 16 or pdgid == 18) hasnu = true;
+      
       daughterCollection.push_back(reco::GenParticle(daughter.charge(), daughter.p4(), daughter.vertex(), daughter.pdgId(), hfCode, true));
     }
 	  // Get daughters of daughter

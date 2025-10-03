@@ -107,7 +107,7 @@ void CSJetProducer::runAlgorithm(edm::Event& iEvent, edm::EventSetup const& iSet
       for (unsigned long nbs=0;nbs<bmesonstemp.size();nbs++) {
 	// std::cout<<"this is the B with neg mass "<<bmesonstemp[nbs].m() << " total number of neg mass particles: " << bmesonstemp.size() << " pt: " << bmesonstemp[nbs].pt() <<std::endl;
 	if ( bmesonstemp[nbs].m() > -1e-5) lights.push_back(bmesonstemp[nbs]);
-	else bmesons.push_back(bmesonstemp[nbs]);  // change these
+	else bmesons.push_back(bmesonstemp[nbs]); 
       }
     }
 
@@ -115,16 +115,16 @@ void CSJetProducer::runAlgorithm(edm::Event& iEvent, edm::EventSetup const& iSet
       for (unsigned long nbs=0;nbs<lights.size();nbs++) {
 	std::cout<<"this is a light with neg mass "<<lights[nbs].m() << " total number of neg mass particles: " << lights.size() << " pt: " << lights[nbs].pt() <<std::endl;
       }
-    }
-    if(bmesonstemp.size()>0) {
+      } 
+      if(bmesonstemp.size()>0) {
       for (unsigned long nbs=0;nbs<bmesonstemp.size();nbs++) {
 	std::cout<<"this is a new B with neg mass "<<bmesonstemp[nbs].m() << " total number of neg mass particles: " << bmesonstemp.size() << " pt: " << bmesonstemp[nbs].pt() <<std::endl;
       }
       } */
+  
 
     // Insert lights back
     pions.insert(pions.end(),lights.begin(),lights.end());
-    
     
     //assign rho and rhom to ghosts according to local eta-dependent map + modulation as function of phi
     for (fastjet::PseudoJet& ighost : ghosts) {
