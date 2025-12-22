@@ -30,13 +30,14 @@ process.source = cms.Source("PoolSource",
 )
 
 if doRun2:
-    process.source.fileNames = cms.untracked.vstring('file:/eos/user/l/lamartik/testsamples/pbpbdata2018/034807c1-0ae5-4540-bb81-80ab2f3bc01d.root')
+#    process.source.fileNames = cms.untracked.vstring('file:/eos/user/l/lamartik/testsamples/pbpbdata2018/034807c1-0ae5-4540-bb81-80ab2f3bc01d.root')
+    process.source.fileNames = cms.untracked.vstring('/store/hidata/HIRun2018A/HIHardProbes/MINIAOD/PbPb18_MiniAODv1-v2/2550000/ea603a5c-2460-437d-b788-3ccbc332bd67.root') # Lorenzo
         #'/store/hidata/HIRun2018A/HIHardProbes/MINIAOD/PbPb18_MiniAODv1-v1/00000/034807c1-0ae5-4540-bb81-80ab2f3bc01d.root')
-
+# /store/hidata/HIRun2018A/HIHardProbes/MINIAOD/PbPb18_MiniAODv1-v1/240000/2d37ed2f-63b2-457c-9b33-0d17ebbfc036.root
 
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
+    input = cms.untracked.int32(20)
     )
 
 ###############################################################################
@@ -254,3 +255,8 @@ process.patJetsAK2PFUnsubJets.addTagInfos = True
 process.patJetsAK2PFUnsubJets.tagInfoSources = cms.VInputTag(["pfInclusiveSecondaryVertexFinderTagInfos","pfImpactParameterTagInfos"])
 
 process.patJetsAK2PFUnsubJets.addDiscriminators = False
+
+
+process.aggregatedPFCands.aggregateWithTruthInfo = False
+process.aggregatedPFCands.aggregateWithCuts = False
+process.aggregatedPFCands.aggregateWithTMVA = True

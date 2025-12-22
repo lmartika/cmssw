@@ -30,9 +30,10 @@ process.source = cms.Source("PoolSource",
 )
 
 if doRun2:
-    process.source.fileNames = cms.untracked.vstring('/store/himc/HINPbPbSpring21MiniAOD/Bjet_pThat-15_TuneCP5_HydjetDrumMB_5p02TeV_Pythia8/MINIAODSIM/FixL1CaloGT_New_Release_112X_upgrade2018_realistic_HI_v9-v1/260000/0af4190a-74ea-4a92-a88e-96ee753d8ccb.root')
-#    process.source.fileNames = cms.untracked.vstring('/store/group/phys_heavyions/lamartik/bjet/043213d2-944a-4e18-b1b5-ef71e93ef850.root')
-#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1250659-1:1250659"); # for eos-file, double-match
+#    process.source.fileNames = cms.untracked.vstring('/store/himc/HINPbPbSpring21MiniAOD/Bjet_pThat-15_TuneCP5_HydjetDrumMB_5p02TeV_Pythia8/MINIAODSIM/FixL1CaloGT_New_Release_112X_upgrade2018_realistic_HI_v9-v1/260000/0af4190a-74ea-4a92-a88e-96ee753d8ccb.root')
+    process.source.fileNames = cms.untracked.vstring('/store/group/phys_heavyions/lamartik/bjet/043213d2-944a-4e18-b1b5-ef71e93ef850.root')
+#    process.source.eventsToProcess = cms.untracked.VEventRange("1:1251612-1:1251612"); # example of B splitting in reco level, centr.161
+    #    process.source.fileNames = cms.untracked.vstring('/store/group/phys_heavyions/lamartik/bjet/043213d2-944a-4e18-b1b5-ef71e93ef850.root')
 #    process.source.eventsToProcess = cms.untracked.VEventRange("1:334986-1:334986"); # example of B splitting in reco level, centr.161
 #    process.source.eventsToProcess = cms.untracked.VEventRange("1:1758572-1:1758572");  # cent 107, split + lost by TMVA
 #    process.source.eventsToProcess = cms.untracked.VEventRange("1:1769063-1:1769063");  # cent 46, seems like b split over several jets, 2 b jet
@@ -43,8 +44,7 @@ if doRun2:
    
 # number of events to process, set to -1 to process all events
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(200)
-#    input = cms.untracked.int32(1)
+    input = cms.untracked.int32(100)
     )
 
 ###############################################################################
@@ -194,7 +194,7 @@ jetAbsEtaMax = 2.5
 doCaloJets = False
 
 # Toggle on/off for saving track info
-doTracks = False
+doTracks = True
 doSvtx = False
 
 runAggregation = True
@@ -210,6 +210,7 @@ jetLabel = "2"
 # add candidate tagging, copy/paste to add other jet radii
 from HeavyIonsAnalysis.JetAnalysis.deepNtupleSettingsFullAggregation_cff import candidateBtaggingMiniAOD
 candidateBtaggingMiniAOD(process, isMC = True, jetPtMin = jetPtMin, jetCorrLevels = ['L2Relative', 'L3Absolute'], doBtagging = doBtagging, labelR = jetLabel, runAggregation = runAggregation)
+
 # setup jet analyzer for inclusive jets
 setattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive",process.akCs4PFJetAnalyzer.clone())
 getattr(process,"akCs"+jetLabel+"PFJetAnalyzerInclusive").jetTag = 'patJetsAKCs'+jetLabel+'PFNotAggrJets'
@@ -333,7 +334,8 @@ process.patJetsAK2PFUnsubJets.tagInfoSources = cms.VInputTag(["pfInclusiveSecond
 
 process.patJetsAK2PFUnsubJets.addDiscriminators = False
 
-#### aggregation settings
-process.aggregatedPFCands.aggregateWithTruthInfo = False
+### true aggregation?
+process.aggregatedPFCands.aggregateWithTruthInfo = True
 process.aggregatedPFCands.aggregateWithCuts = False
-process.aggregatedPFCands.aggregateWithTMVA = True
+process.aggregatedPFCands.aggregateWithTMVA = False
+

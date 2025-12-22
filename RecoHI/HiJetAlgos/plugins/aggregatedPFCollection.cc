@@ -185,20 +185,20 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 
     std::vector<fastjet::PseudoJet> jetConstituents = {};
 
-    // std::cout << "Matched jets: " << matchedjets->size() << std::endl; // debug
+    //    std::cout << "Matched jets: " << matchedjets->size() << std::endl; // debug
 
     for(unsigned int j = 0; j < jets->size(); ++j){
 
         const pat::Jet& jet = (*jets)[j];
 
 	if ( jet.pt() < jetPtCut_ ) continue;
-	if ( jet.eta() > jetEtaCut_ ) continue;
+	if ( abs(jet.eta()) > jetEtaCut_ ) continue;
 
         if (aggregateHF_) {
 	  
             if (doGenJets_ && isMC_) {
 
-                //  std::cout << "------->Aggregating HF for gen jet" << std::endl;               
+	      //                std::cout << "------->Aggregating HF for gen jet" << std::endl;               
                 reco::PFCandidate outputPseudoHF;
 		//                std::vector<reco::PFCandidate> constituentsNoHF;
 
@@ -300,7 +300,7 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
                 
             else {
 
-	      // std::cout << "------->Aggregating HF for reco jet" << std::endl;
+	      //	      std::cout << "------->Aggregating HF for reco jet" << std::endl;
 	      
 	      int matchIndex = -1;
 	      if (domatch_) {   // 
@@ -532,14 +532,16 @@ void aggregatedPFCollection::produce(edm::StreamID, edm::Event& iEvent, const ed
 			
                     }
                     else if (status >= 100) {
-		      
-		        if ((*candToGenParticleMap).find(constit) != (*candToGenParticleMap).end()) {
-                            edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
-                            int genstatus = matchGenParticle->status();
-			    if (genstatus > 1 and genstatus%2) hasnu = true;
-			    //                            std::cout << "---- constit status in the gen map after setting status 100 in aggr: " << genstatus << std::endl;               
-			    }
-                        hfConstituentsMap[status].push_back(constit);
+
+		      if (isMC_) {
+			if ((*candToGenParticleMap).find(constit) != (*candToGenParticleMap).end()) {
+			  edm::Ptr<pat::PackedGenParticle> matchGenParticle = (*candToGenParticleMap).at(constit);
+			  int genstatus = matchGenParticle->status();
+			  if (genstatus > 1 and genstatus%2) hasnu = true;
+			  //                            std::cout << "---- constit status in the gen map after setting status 100 in aggr: " << genstatus << std::endl;               
+			}
+		      }
+		      hfConstituentsMap[status].push_back(constit);
 			//			std::cout << "HF Constit pt: " << constit->pt() << " id: " << constit->pdgId() << " mass " << constit->mass() << std::endl;
                     }
 		    
